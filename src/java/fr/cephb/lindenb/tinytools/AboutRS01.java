@@ -4,10 +4,12 @@
 package fr.cephb.lindenb.tinytools;
 
 import java.util.Set;
+import java.util.Vector;
 
 import org.lindenb.util.Compilation;
 
 import fr.cephb.lindenb.bio.snp.RsId;
+import fr.cephb.lindenb.sql.MySQLConstants;
 
 /**
  * @author lindenb
@@ -17,7 +19,13 @@ public class AboutRS01
 	{
 	public void run(Set<RsId> set)
 		{
-		
+		Vector<RsId> snps= new Vector<RsId>(set);
+		int start=0;
+		while(!snps.isEmpty())
+			{
+			
+			snps.
+			}
 		}
 	
 	/**
@@ -26,6 +34,7 @@ public class AboutRS01
 	public static void main(String[] args)
 		{
 		try {
+			Class.forName(MySQLConstants.DRIVER);
 			int optind=0;
 		    while(optind<args.length)
 				{
