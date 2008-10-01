@@ -1,0 +1,500 @@
+/***
+ *
+ * Header for  $filename
+ *
+ */
+\#include <assert.h>
+\#include <string.h>
+\#include "lang/morestdlib.h"
+\#include "lang/morestring.h"
+\#include "berkeley/moredb.h"
+\#include "util/debug.h"
+\#include "xml/morexml.h"
+\#include "${filename}.h"
+
+#foreach($struct in $deffile.structures)
+
+#set( $arrayPrefix = "${struct.name}Array" )
+
+$struct.ptr ${struct.prefix}New()
+	{
+	$struct.ptr ptr= ($struct.ptr)Calloc(1,sizeof($struct.name));
+	if(ptr==NULL)
+		{
+		fprintf(stderr,"%s:%d: Cannot create a new $struct.name\n",__FILE__,__LINE__);
+		return NULL;
+		}
+
+	return ptr;
+	}
+
+void ${struct.prefix}Delete($struct.ptr ptr)
+	{
+	if(ptr!=NULL)
+		{
+		
+		#foreach($field in $struct.simpleFields)
+			${field.freePtr("ptr")}
+		#end
+		Free(ptr);
+		}
+	}
+
+${struct.name}ArrayPtr ${arrayPrefix}New()
+	{
+	${struct.name}ArrayPtr ptr= (${struct.name}ArrayPtr)Malloc(sizeof(${struct.name}Array));
+	if(ptr==NULL)
+		{
+		fprintf(stderr,"%s:%d: Cannot create a new array\n",__FILE__,__LINE__);
+		return NULL;
+		}
+	ptr->_data= NULL;
+	ptr->_size=0;
+	return ptr;
+	}
+
+
+
+
+void ${arrayPrefix}Delete(${struct.name}ArrayPtr ptr)
+	{
+	if(ptr==NULL) return;
+	${arrayPrefix}Clear(ptr);
+	Free(ptr->_data);
+	Free(ptr);
+	}
+
+
+int ${arrayPrefix}Clear(${struct.name}ArrayPtr ptr)
+	{
+	assert(ptr!=NULL);
+	while(${arrayPrefix}Size(ptr)!=0)
+		{
+		int rez=${arrayPrefix}RemoveElementAt(ptr,${struct.name}ArraySize(ptr)-1);
+		if(rez!=0) return rez;
+		}
+	ptr->_size=0;
+	Free(ptr->_data);
+	ptr->_data=NULL;
+	return 0;
+	}
+
+${struct.ptr} ${arrayPrefix}At(${struct.name}ArrayPtr ptr,int index)
+	{
+	assert(ptr!=NULL);
+	assert(index>=0);
+	assert(index<${arrayPrefix}Size(ptr));
+	return ptr->_data[index];
+	}
+	
+int ${arrayPrefix}Size(const ${struct.name}ArrayPtr ptr)
+	{
+	assert(ptr!=NULL);
+	return ptr->_size;
+	}
+	
+	
+int ${arrayPrefix}InsertElementAt(${struct.name}ArrayPtr ptr,${struct.ptr} item, int index)
+	{
+	${struct.ptr}* array = NULL;
+	assert(ptr!=NULL);
+	assert(item!=NULL);
+	assert(index>=0);
+	assert(index<= ptr->_size);
+	array=(${struct.ptr}*)Realloc(ptr->_data, (ptr->_size+1)*sizeof(${struct.ptr}));
+	if(array==NULL) return -1;
+	ptr->_data=array;
+	memmove(&array[index+1],&array[index], (ptr->_size - index)*sizeof(${struct.ptr}) );
+	array[index]=item;
+	ptr->_size++;
+	return 0;
+	}
+
+int ${arrayPrefix}AddElement(${struct.name}ArrayPtr ptr,${struct.ptr} item)
+	{
+	return ${arrayPrefix}InsertElementAt(ptr,item, ptr->_size);
+	}
+	
+${struct.ptr} ${arrayPrefix}DetachElementAt(${struct.name}ArrayPtr ptr,int index)
+	{
+	${struct.ptr}* array = NULL;
+	${struct.ptr} item=NULL;
+	assert(ptr!=NULL);
+	assert(index >= 0);
+	assert(index < ptr->_size);
+	item= ptr->_data[index];
+	memmove(&ptr->_data[index],&ptr->_data[index+1], ((ptr->_size-1) - index)*sizeof(${struct.ptr}) );
+	array=(${struct.ptr}*)Realloc(ptr->_data, (ptr->_size+1)*sizeof(${struct.ptr}));
+	if(array==NULL) return NULL;
+	ptr->_data=array;
+	ptr->_size--;
+	return item;
+	}
+	
+int ${arrayPrefix}RemoveElementAt(${struct.name}ArrayPtr ptr,int index)
+	{
+	${struct.ptr} item= ${arrayPrefix}DetachElementAt(ptr,index);
+	if(item==NULL) return -1;
+	${struct.prefix}Delete(item);
+	return 0;
+	}
+
+
+int ${arrayPrefix}PrintXML(const ${struct.name}ArrayPtr ptr,FILE* out)
+	{
+	int i;
+	assert(ptr!=NULL);
+	assert(out!=NULL);
+	fputs("<op:${struct.xmlTagName}Set>\n",out);
+	for(i=0;i<  ${arrayPrefix}Size(ptr);++i)
+		{
+		${struct.prefix}PrintXML(${arrayPrefix}At(ptr,i),out);
+		}
+	fputs("/<op:${struct.xmlTagName}Set>\n",out);
+	return 0;
+	}
+
+int ${arrayPrefix}PrintJSON(const ${struct.name}ArrayPtr ptr,FILE* out)
+	{
+	int i;
+	assert(ptr!=NULL);
+	assert(out!=NULL);
+	fputc('[',out);
+	for(i=0;i<  ${arrayPrefix}Size(ptr);++i)
+		{
+		if(i>0) fputc(',',out);
+		${struct.prefix}PrintJSON(${arrayPrefix}At(ptr,i),out);
+		}
+	fputc(']',out);
+	return 0;
+	}
+
+
+int ${arrayPrefix}PrintText(const ${struct.name}ArrayPtr ptr,FILE* out)
+	{
+	int i;
+	assert(ptr!=NULL);
+	assert(out!=NULL);
+	for(i=0;i<  ${arrayPrefix}Size(ptr);++i)
+		{
+		${struct.prefix}PrintText(${arrayPrefix}At(ptr,i),out);
+		if(i>0) fputc('\n',out);
+		}
+	return 0;
+	}
+
+
+
+int ${struct.prefix}PrintJSON(const ${struct.ptr} ptr,FILE* out)
+	{
+	assert(ptr!=NULL);
+	assert(out!=NULL);
+	fputc('{',out);
+	#foreach($field in $struct.simpleFields)
+		#if($velocityCount>1) fputc(',',out); #end
+		 fputs("${field.name} : ",out); ${field.printJSON("out","ptr")}
+	#end
+	fputc('}',out);
+	return 0;
+	}
+
+
+int ${struct.prefix}PrintXML(const ${struct.ptr} ptr,FILE* out)
+	{
+	assert(ptr!=NULL);
+	assert(out!=NULL);
+	fputs("<op:${struct.xmlTagName}>\n",out);
+	#foreach($field in $struct.simpleFields)
+		 #if($field.pointer)
+		 	if(ptr->${field.name}==NULL)
+		 		{
+                fputs("  <op:${field.xmlTagName}/>\n",out);
+		 		}
+		 	else
+		 		{
+                fputs("  <op:${field.xmlTagName}>",out);
+                ${field.printXML("out","ptr")}
+                fputs("</op:${field.xmlTagName}>\n",out);
+		 		}
+		  #else
+                fputs("  <op:${field.xmlTagName}>",out);
+                ${field.printXML("out","ptr")}
+                fputs("</op:${field.xmlTagName}>\n",out);
+		  #end
+	#end
+	fputs("</op:${struct.xmlTagName}>\n",out);
+	return 0;
+	}
+
+
+
+int ${struct.prefix}PrintHeader(FILE* out)
+	{
+	assert(out!=NULL);
+	#foreach($field in $struct.simpleFields)
+		#if($velocityCount>1) fputc('\t',out); #end
+		 fputs("${field.name}",out);
+	#end
+	return 0;
+	}
+
+
+int ${struct.prefix}PrintText(const ${struct.ptr} ptr,FILE* out)
+	{
+	assert(out!=NULL);
+	#foreach($field in $struct.simpleFields)
+		#if($velocityCount>1) fputc('\t',out); #end
+		${field.printText("out","ptr")}
+	#end
+	return 0;
+	}
+
+int ${struct.prefix}PackDBTKey(
+		DBT* dbt
+	 	#foreach($field in $struct.key.simpleFields),const ${field.type} ${field.name}#{end}
+	 	)
+	 	{
+	 	int ret=0;
+	 	assert(dbt!=NULL);
+	 	dbt->size=0;
+	 	dbt->data= NULL;
+	 	#foreach($field in $struct.key.simpleFields)if((ret=${field.packDBT("dbt")})!=0)
+	 		{
+	 		dbt->size=0;
+	 		Free(dbt->data);
+	 		return ret;
+	 		}#{end}
+	 	return 0;
+	 	}
+
+int ${struct.prefix}Pack(
+		DBT* dbt,
+	 	const ${struct.ptr} ptr
+	 	)
+	 	{
+	 	int ret=0;
+	 	assert(dbt!=NULL);
+	 	dbt->size=0;
+	 	dbt->data= NULL;
+	 	#foreach($field in $struct.value.simpleFields)if((ret=${field.packDBT("dbt","ptr")})!=0)
+	 		{
+	 		dbt->size=0;
+	 		Free(dbt->data);
+	 		return ret;
+	 		}
+	 	#{end}
+	 	return 0;
+	 	}
+
+${struct.ptr}  ${struct.prefix}Unpack(
+		const DBT* dbt
+	 	)
+	 	{
+	 	int size=0;
+	 	assert(dbt!=NULL);
+	 	${struct.ptr} ptr= ${struct.prefix}New();
+	 	if(ptr==NULL) return NULL;
+		#foreach($field in $struct.value.simpleFields)
+		${field.unpackDBT("dbt","ptr","size")}
+	 	#{end}
+	 	return ptr;
+	 	}
+
+
+${struct.name}ArrayPtr
+${struct.prefix}Search(
+	DBC *cursor,
+	SearchDBPtr search
+	)
+	{
+	int index=0;
+	int ret;
+	DBT key, data;
+	assert(cursor!=NULL);
+	assert(search!=NULL);
+	
+	${struct.name}ArrayPtr array = ${arrayPrefix}New();
+	if(array==NULL) return NULL;
+	
+	/* Initialize our DBTs. */
+	memset(&key, 0, sizeof(DBT));
+	memset(&data, 0, sizeof(DBT));
+	
+	/* Iterate over the database, retrieving each record in turn. */
+	while ((ret = cursor->get(cursor, &key, &data,
+			search->cursorOrientation
+			)) == 0)
+		{
+	    if(search->accept(&key,&data,search->userData))
+	    	{
+	    	${struct.ptr} item;
+	    	++index;
+	    	if(index< search->start) continue;
+	    	item = ${struct.prefix}Unpack(&data);
+	    	if(item==NULL)
+	    		{
+	    		${arrayPrefix}Delete(array);
+	    		return NULL;
+	    		}
+	    	if(${arrayPrefix}AddElement(array,item)!=0)
+	    		{
+	    		${struct.prefix}Delete(item);
+	    		${arrayPrefix}Delete(array);
+	    		return NULL;
+	    		}
+	    	if(index >= (search->start+search->limit)) break;
+	    	}
+		}
+
+	return array;
+	}
+
+
+#if(1==2)
+
+/**
+ * open a database for $struct.name
+ * @pram env berkeleyDB environement
+ * @param DB_TXN *txnid transaction ptr
+ * @return 0 if no problem
+ */
+static int ${struct.prefix}Open(
+	DB_ENV* env,
+	DB_TXN *txnid,
+	u_int32 db_flags
+	)
+	{
+	int ret;
+	assert(env!=NULL);
+	ret = env->open(
+		env,
+		txnid,
+		NULL,
+		"${struct.dbName}",
+		${struct.dbType},
+		db_flags,
+		0
+		);
+	if(ret!=0)
+		{
+		env->err(env,ret,"Database ${struct.dbName} open failed");
+		}
+	return err;
+	}
+
+/**
+ * close a database for $struct.name
+ * @pram OperonPtr operon environement
+ * @param DB_TXN *txnid transaction ptr
+ * @return 0 if no problem
+ */
+static int ${struct.prefix}Open(
+	OperonPtr operon,
+	DB_TXN *txnid,
+	u_int32 db_flags
+	)
+	{
+	int ret;
+	DB_ENV* env= operon->getDBEnv(operon);
+	assert(env!=NULL);
+	ret = env->open(
+		env,
+		txnid,
+		NULL,
+		${struct.dbName},
+		${struct.dbType},
+		db_flags,
+		0
+		);
+	if(ret!=0)
+		{
+		env->err(env,ret,"Database ${struct.dbName} open failed");
+		}
+	return err;
+	}
+
+
+
+static OperonDBHandler ${struct.name}DBHandler
+	=
+	{
+	
+	};
+
+OperonDBHandlerPtr ${struct.name}DBHandlers=&${struct.name}DBHandler;
+
+
+static void 
+bdbenv_unpack_snpids(const DBT *pdata, SNPIDS *snpids)
+	{
+	size_t s = 0;
+	char *d;
+	
+	memset(snpids,0,sizeof(SNPIDS));
+	d = pdata->data;
+	
+	snpids->fid = d;
+	s = s + 1 + strlen(snpids->fid);
+	snpids->acn = d + s;
+	}
+
+
+/*
+ *  Function bdbenv_insert_snpids() packs data and inserts into SNPIDS.
+ *  Returns 0 if no error.
+ *
+ */
+
+int 
+bdbenv_insert_snpids(char *fid, char *acn, long *N)
+	{
+	DBT key, data;
+	size_t z, s;
+	char *d, kac[MAX_ACN], str[128];
+	
+	common_getstr_up(kac,acn,"",MAX_ACN);
+	if (common_alldigits(fid) != MAX_FID-1 || kac[0] == '\0' || strcmp(kac,"N/A") == 0)
+		{
+		return 0;
+		}
+	
+	z = + strlen(fid) 
+		+ strlen(acn) 
+		+ 2; 
+	d = malloc(z);
+	if (!d) 
+		{
+		common_errmsg(errno,XWAR,"bdbenv_insert_snpids",strerror(errno));
+		return errno;
+		}
+	memset(d,0,z);
+	s = 0;
+	s = common_pack_str(d,fid,s);
+	s = common_pack_str(d,acn,s);
+	if (s != z)
+		{
+		sprintf(str,"%u z-bytes allocated not equal to %u s-bytes packed",z,s);
+		common_errmsg(XONG,XWAR,"bdbenv_insert_snpids",str);
+		return XONG;
+		}
+	/* Store uppercase key */
+	memset(&key,0,sizeof(DBT));
+	memset(&data,0,sizeof(DBT));
+	key.data = kac;
+	key.size = (u_int32_t) (strlen(kac) + 1);
+	data.data = d;
+	data.size = (u_int32_t) z;
+	if (appcfg->commit != 0) 
+		{
+		bdbenv_insert_nontxn(operon->snpids,&key,&data,0,acn,N);
+		}
+	free(d);
+	return 0;
+	}
+
+
+#end
+
+#end
+
+
