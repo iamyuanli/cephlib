@@ -1,4 +1,38 @@
-public class ${class.name}
+${package}
+/**
+ * ${prefix}${struct.javaName}
+ *
+ */
+public class ${prefix}${struct.javaName}
 	{
+    #foreach($field in $struct.fields)
+    #if($field.enum)
+    public enum ${field.javaName}
+		{
+        #foreach($item in ${field.enumItems})#if($velocityCount>1),#end${item.normalizedName}
+        	{
+        	@Override
+        	public String getSQLName()
+        		{
+        		return "${item.name}";
+        		}
+        	}
+        #end
+			;
+		}
+	#end
+	#end
+	
+	#foreach($field in $struct.fields)
+	private ${field.javaType} ${field.name}=0;
+	#end
+
+    /**
+	 * ${prefix}${struct.javaName}
+	 * constructor
+	 */
+	public ${prefix}${struct.javaName}()
+		{
+		}
 	
 	}
