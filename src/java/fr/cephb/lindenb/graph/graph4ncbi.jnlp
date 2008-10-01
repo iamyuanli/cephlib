@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://anybody.cephb.fr/perso/lindenb/graph4ncbi/" href="graph4ncbi.jnlp">
+   <information>
+      <title>Graph4NCBI</title>
+      <vendor>http://plindenbaum.blogspot.com/</vendor>
+      <description>Browse links over the NCBI</description>
+      <description kind="short">Browse links over the NCBI</description>
+      <offline-allowed/>
+   </information>
+   <offline-allowed/>
+   <security>
+      <all-permissions/>
+   </security>
+   <resources>
+      <j2se version="1.6+"/>
+      <jar href="graph4ncbi.jar"/> 
+   </resources>
+   <application-desc main-class="fr.cephb.lindenb.graph.Graph4NCBI"/>
+</jnlp>

@@ -1,0 +1,331 @@
+/***
+ *
+ * Header for  $filename
+ *
+ */
+#ifndef __${filename}__H
+#define __${filename}__H
+
+\#include <db.h>
+\#include "core/search.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+#foreach($struct in $deffile.structures)
+
+
+
+
+ /**
+  * ${struct.name}
+  * Description: ${struct.description}
+  */
+ typedef struct $struct.typedef
+ 	{
+ 	#foreach($field in $struct.simpleFields)
+        /**
+ 		 * ${field.name}
+ 		 * ${field.description}
+ 		 */
+ 		${field.type}	${field.name};
+ 	#end
+ 	} $struct.name, *$struct.ptr;
+
+
+/**
+ *  define a vector of ${struct.name}
+ * 
+ */
+typedef  struct ${struct.name}Array_t
+	{
+	/** array of  ${struct.ptr} */
+	${struct.ptr}* _data;
+	/** number of items in the list */
+	int _size;
+	}
+	${struct.name}Array,
+	*${struct.name}ArrayPtr;
+
+#set( $arrayPrefix = "${struct.name}Array" )
+
+
+/**
+ * creates a new $struct.name or NULL if there was a problem.
+ * should be free with  ${struct.prefix}Delete
+ * @return a new $struct.ptr
+ */
+extern $struct.ptr ${struct.prefix}New();
+
+/**
+ * free a $struct.name allocated with $struct.ptr ${struct.prefix}New
+ */
+extern void ${struct.prefix}Delete( $struct.ptr ptr);
+
+/**
+ * creates a new ${struct.name}Array or NULL if there was a problem.
+ * should be free with  ${struct.name}ArrayDelete
+ * @return a new ${struct.name}ArrayPtr
+ */
+extern ${struct.name}ArrayPtr ${arrayPrefix}New();
+
+/**
+ * creates a new ${struct.name}Array or NULL if there was a problem.
+ * should be free with  ${struct.name}ArrayDelete
+ */
+extern void ${arrayPrefix}Delete(${struct.name}ArrayPtr ptr);
+
+/**
+ * clear a ${struct.name}Array. freeing each item
+ * @return 0 if there was not problem
+ */
+extern int ${arrayPrefix}Clear(${struct.name}ArrayPtr ptr);
+
+/**
+ * @param ptr the ${struct.name}ArrayPtr
+ * @return the size of a ${struct.name}Array
+ */
+extern int ${arrayPrefix}Size(const ${struct.name}ArrayPtr ptr);
+
+/**
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param index the index in the array
+ * @return the index-th element of a ${struct.name}Array
+ */
+extern ${struct.ptr} ${arrayPrefix}At(${struct.name}ArrayPtr ptr,int index);
+
+/**
+ * add a new ${struct.ptr} in the array
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param item the ${struct.ptr} item to be inserted
+ * @param index the index in the array
+ * @return 0 if the item was inserted
+ */
+extern int ${arrayPrefix}InsertElementAt(${struct.name}ArrayPtr ptr,${struct.ptr} item, int index);
+
+/**
+ * add a new ${struct.ptr} in the array
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param item the ${struct.ptr} item to be inserted
+ * @return 0 if the item was inserted
+ */
+extern int ${arrayPrefix}AddElement(${struct.name}ArrayPtr ptr,${struct.ptr} item);
+
+/**
+ * release a  ${struct.ptr} without releasing the memory
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param index the ${struct.ptr} item to be inserted
+ * @return the element detached
+ */
+extern ${struct.ptr} ${arrayPrefix}DetachElementAt(${struct.name}ArrayPtr ptr,int index);
+
+/**
+ * remove a ${struct.ptr}
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param index the ${struct.ptr} item to be inserted
+ * @return 0 if the item was removed
+ */
+extern int ${arrayPrefix}RemoveElementAt(${struct.name}ArrayPtr ptr,int index);
+
+
+/**
+ * print a ${arrayPrefix} to XML
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param out the output stream
+ * @return 0 if no error occured
+ */
+extern int ${arrayPrefix}PrintXML(const ${struct.name}ArrayPtr ptr,FILE* out);
+
+/**
+ * print a ${arrayPrefix} to JSON
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param out the output stream
+ * @return 0 if no error occured
+ */
+extern int ${arrayPrefix}PrintJSON(const ${struct.name}ArrayPtr ptr,FILE* out);
+
+
+/**
+ * print a ${arrayPrefix} to text using TAB as delimiter
+ * @param ptr the ${struct.name}ArrayPtr
+ * @param out the output stream
+ * @return 0 if no error occured
+ */
+extern int ${arrayPrefix}PrintText(const ${struct.name}ArrayPtr ptr,FILE* out);
+
+/**
+ * print a  ${struct.name} to XML
+ * @arg ptr the ${struct.name}
+ * @arg out the output stream
+ * @return 0 if there was no problem
+ */
+extern int ${struct.prefix}PrintXML(const ${struct.ptr} ptr,FILE* out);
+
+/**
+ * print a  ${struct.name} to JSON
+ * @arg ptr the ${struct.name}
+ * @arg out the output stream
+ * @return 0 if there was no problem
+ */
+extern int ${struct.prefix}PrintJSON(const ${struct.ptr} ptr,FILE* out);
+
+
+/**
+ * print a  Header for ${struct.name} (doesn't print a CR/LF at the end) 
+ * using TAB as delimiter
+ * @arg out the output stream
+ * @return if there was no problem
+ */
+extern int ${struct.prefix}PrintHeader(FILE* out);
+
+/**
+ * print a  ${struct.name} to text  (doesn't print a CR/LF at the end) 
+ * using TAB as delimiter
+ * @arg ptr the ${struct.name}
+ * @arg out the output stream
+ * @return 0 if there was no problem
+ */
+extern int ${struct.prefix}PrintText(const ${struct.ptr} ptr,FILE* out);
+
+
+/** 
+ * pack the key describing a  ${struct.name} in a <code>DBT</code> structure
+ * the <code>data</code> member <b>must</b> be free using <code>Free</code>
+ * @param dbt the structure where the data will be packed
+#foreach($field in $struct.key.simpleFields)
+ * @param ${field.name} ${field.description} 
+#end
+ * @return 0 if no problem
+ */
+extern int ${struct.prefix}PackDBTKey(
+		DBT* dbt
+	 	#foreach($field in $struct.key.simpleFields),const ${field.type} ${field.name}
+	 	#{end}
+	 	);
+
+/** 
+ * pack the ${struct.name} in a <code>DBT</code>
+ * the <code>data</code> member <b>must</b> be free using <code>Free</code>
+ * @param dbt the structure where the data will be packed
+ * @param ${struct.ptr} the ${struct.name} using to fill the dbt 
+ * @return 0 if no problem
+ */
+extern int ${struct.prefix}Pack(
+		DBT* dbt,
+	 	const ${struct.ptr} ptr
+	 	);
+
+/** 
+ * unpack the ${struct.name} in a <code>DBT</code>
+ * the <code>data</code> member <b>must</b> be free using <code>Free</code>
+ * @param dbt the structure where the data will be packed
+ * @param ${struct.ptr} the ${struct.name} using to fill the dbt 
+ * @return NULL if proble or a new ${struct.name} (should be free using ${struct.prefix}Free
+ */
+extern ${struct.ptr}  ${struct.prefix}Unpack(
+		const DBT* dbt
+	 	);
+
+/** 
+ * Search a Cursor and return a ${struct.name}ArrayPtr of the item matching the criteria
+ * @param cursor the cursor scanning the database
+ * @param search the search parameters
+ * @return 0 if no problem
+ */
+extern
+${struct.name}ArrayPtr
+${struct.prefix}Search(
+	DBC *cursor,
+	SearchDBPtr search
+	);
+
+#if(1==2)
+/** 
+ * get a ${struct.name} by its id
+ * @param database the berkeleydb database, must be open
+ * @param txnid transaction handle  may be null
+#foreach($field in $struct.key.simpleFields)
+ * @param ${field.name} ${field.description} 
+#end
+ * @param ptr  the structure $struct.ptr that will be filled
+ * @param flags berkeleyDB flags
+ * @return 0 if the record was retrieved
+ */
+extern int ${struct.prefix}getBy#foreach($field in $struct.key.simpleFields)_${field.name}#{end}(
+	 	DB* database,
+	 	DB_TXN *txnid,
+	 	#foreach($field in $struct.key.simpleFields)${field.type} ${field.name},
+	 	#{end}$struct.ptr ptr,
+	 	u_int32_t flags
+	 	);
+
+/** 
+ * get a ${struct.name} by  <code>DBT</code>
+ * @param database the berkeleydb database, must be open
+ * @param txnid transaction handle  may be null
+ * @param key the key used to retrieve the data
+ * @param value the value to be filled
+ * @param ptr  the structure $struct.ptr that will be filled
+ * @param flags berkeleyDB flags
+ * @return 0 if the record was retrieved
+ */
+extern int ${struct.prefix}getByDBT(
+	 	DB* database,
+	 	DB_TXN *txnid,
+	 	const DBT* key,
+	 	DBT* value,
+	 	u_int32_t flags
+	 	);
+
+
+/** 
+ * put a ${struct.name} in the database
+ * @param database the berkeleydb database, must be open
+ * @param txnid transaction handle  may be null
+#foreach($field in $struct.key.simpleFields)
+ * @param ${field.name} ${field.description} 
+#end
+ * @param ptr  the structure $struct.ptr that will be saved
+ * @param flags berkeleyDB flags
+ * @return 0 if the record was retrieved
+ */
+extern int ${struct.prefix}putBy#foreach($field in $struct.key.simpleFields)_${field.name}#{end}(
+	 	DB* database,
+	 	DB_TXN *txnid,
+	 	#foreach($field in $struct.key.simpleFields)${field.type} ${field.name},#{end}const $struct.ptr ptr,
+	 	u_int32_t flags
+	 	);
+	 	
+/** 
+ * put a ${struct.name} using  <code>DBT</code>
+ * @param database the berkeleydb database, must be open
+ * @param txnid transaction handle  may be null
+ * @param key the key used to retrieve the data
+ * @param value the value to be filled
+ * @param ptr  the structure $struct.ptr that will be saved
+ * @param flags berkeleyDB flags
+ * @return 0 if the record was retrieved
+ */
+extern int ${struct.prefix}putByDBT(
+	 	DB* database,
+	 	DB_TXN *txnid,
+	 	const DBT* key,
+	 	const DBT* value,
+	 	u_int32_t flags
+	 	);	 	
+
+#end
+
+
+
+#end
+
+
+
+
+#ifdef  __cplusplus
+	}
+#endif
+
+#endif // __${filename}__H

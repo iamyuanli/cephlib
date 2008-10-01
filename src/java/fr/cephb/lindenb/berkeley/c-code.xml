@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+ <comment>Snippet for Berkeley Strcutures</comment>
+  <!-- ============================================== -->
+ <entry key="top-h-header">
+/*************************************
+ *
+ * This file was generated on __DATE__
+ * please DO NOT EDIT.
+ *
+ */
+#ifndef __NAME__
+#define __NAME__
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+ </entry>
+ 
+ <!-- ============================================== -->
+ <entry key="bottom-h-header">
+#ifdef  __cplusplus
+	}
+#endif
+
+#endif // __NAME__
+ </entry>
+
+ <!-- ============================================== -->
+ <entry key="structure-definition-comment">
+/**
+ * __NAME__
+ * Description: __DESC__
+ */
+ </entry>
+ 
+ <entry key="field-definition-comment">
+	/**
+	 * __NAME__
+	 * Description: __DESC__
+	 */
+</entry>
+ 
+ <entry key="def-struct-new">
+/** 
+ * creates a new __PTR__
+ * @return a new __PTR__ or NULL if there was a problem
+ */
+extern __PTR__ __PREFIX__new();
+</entry> 
+
+ <entry key="def-struct-delete">
+/** 
+ * delete __PTR__ and free its components
+ * @param the __PTR__ to delete
+ */
+extern void __PREFIX__delete(__PTR__ ptr);
+</entry> 
+
+ <entry key="get-record-by-id-def-1">
+/** 
+ * get a __NAME__ by its id
+ * @param database the berkeleydb database, must be open
+ * @param transaction transaction handle  may be null
+</entry> 
+
+ <entry key="get-record-by-id-def-2">
+ * @param ptr  the structure __PTR__ that will be filled
+ * @param flags berkeleyDB flags
+ * @return 0 if the record was retrieved
+ */
+</entry> 
+
+ <entry key="put-record-def">
+/**
+ * put a __NAME__ in a database 
+ * @param database the berkeleydb database, must be open
+ * @param transaction transaction handle  may be null
+ * @param ptr the __PTR__
+ * @param flags ( DB_APPEND | DB_NODUPDATA | DB_NOOVERWRITE )
+ * @return 0 if the __NAME__ was inserted
+ */
+ extern int __PREFIX__put(DB* database,DB_TXN *txnid,const __PTR__ ptr, u_int32_t flags);
+ </entry> 
+</properties>
+
