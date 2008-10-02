@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -19,6 +20,8 @@ import org.apache.velocity.app.VelocityEngine;
 import org.lindenb.sql.SQLUtilities;
 
 
+
+
 import fr.cephb.lindenb.bio.ucsc.UCSCConstants;
 import fr.cephb.lindenb.sql.MySQLConstants;
 
@@ -26,7 +29,8 @@ public class UCSCPojoTask extends  org.apache.tools.ant.Task
 {
 static public class Identifier
 	{
-	protected String name;
+	protected String description=null;
+	protected String name=null;
 	public Identifier()
 		{
 		this(null);
@@ -35,6 +39,7 @@ static public class Identifier
 		{
 		this.name=name;
 		}
+	public String getDescription() { return this.description==null?getName():this.description;}
 	public String getName() { return name; }
 	public String getJavaName() {return javaName(getName());}
 	public String getNormalizedName() {return normalizeName(getName());}
@@ -115,7 +120,7 @@ static public class Field
 		Vector<Identifier> e=new Vector<Identifier>();
 		for(String tok: s.split("[,]"))
 			{
-			tok=tok.substring(1,tok.length()-1);
+			tok=unquote(tok);
 			e.add(new Identifier(tok));
 			}
 		return e;
@@ -193,6 +198,20 @@ private static String javaName(String s)
 	return s.substring(0,1).toUpperCase()+s.substring(1);
 	}
 
+private static String unquote(String str)
+	{
+	String s=str.trim();
+	if(s.startsWith("\"") && s.endsWith("\"") && s.length()>1)
+		{
+		str= s.substring(1,s.length()-1);
+		}
+	else if(s.startsWith("\'") && s.endsWith("\'") && s.length()>1)
+		{
+		str =s.substring(1,s.length()-1);
+		}
+	return str;
+	}
+
 public void setForce(boolean force) {
 	this.force = force;
 	}
@@ -234,7 +253,7 @@ public void execute() throws BuildException
 			if(table.length()==0) continue;
 			Template template  = Velocity.getTemplate("pojo.java.vm");
 			
-			File classFile=new File(this.todir,javaName(table)+".java");
+			File classFile=new File(this.todir,this.prefix+javaName(table)+".java");
 			
 			if(classFile.exists() && this.force==false) continue;
 			
@@ -248,8 +267,8 @@ public void execute() throws BuildException
 				}
 			Table struct= new Table();
 			struct.name=table;
-			Statement pstmt=con.createStatement();
-			ResultSet row= pstmt.executeQuery("desc "+table);
+			Statement stmt=con.createStatement();
+			ResultSet row= stmt.executeQuery("desc "+table);
 			
 			while(row.next())
 				{
@@ -270,8 +289,51 @@ public void execute() throws BuildException
 				System.out.println("=");
 				*/
 				}
-			pstmt.close();
+			stmt.close();
 			
+			PreparedStatement pstmt=con.prepareStatement(
+				"select autoSqlDef from tableDescriptions where tableName=?");
+			pstmt.setString(1, table);
+			row= pstmt.executeQuery();
+			while(row.next())
+				{
+				String content=row.getString(1);
+				int n=content.indexOf('(');
+				if(n!=-1)
+					{
+					int n2= content.indexOf('\"');
+					if(n2< n)
+						{
+						struct.description= content.substring(n2+1,n).trim();
+						}
+					content=content.substring(n);
+					}
+				
+				for(String line:content.split("[\n]"))
+					{
+					line=line.trim();
+					if(line.length()==0) continue;
+					int n2= line.indexOf(';');
+					if(n2==-1) continue;
+					int n3=n2;
+					while(n3>0 && !Character.isWhitespace(line.charAt(n3-1)))
+						{
+						--n3;
+						}
+					String fName=line.substring(n3,n2).trim();
+					String fDesc=unquote(line.substring(n2+1).trim());
+					for(Field f:struct.fields)
+						{
+						if(f.name.equals(fName))
+							{
+							f.description=fDesc;
+							break;
+							}
+						}
+					}
+				}
+			
+			pstmt.close();
 			
 			
 			VelocityContext context= new VelocityContext();
@@ -305,7 +367,8 @@ public static void main(String[] args)
 		UCSCPojoTask p=new UCSCPojoTask();
 		p.setTodir(new File("/tmp/"));
 		p.setTemplates(new File("/home/pierre/cephlib/src/java/fr/cephb/lindenb/ant/"));
-		p.setTables("snp129 refGene");
+		p.setTables("snp129 cytoBand");
+		p.setPrefix("Hg18");
 		p.setPackage("fr.cephb.lindenb.bio.ucsc.hg18");
 		p.execute();
 	} catch (Exception e) {
