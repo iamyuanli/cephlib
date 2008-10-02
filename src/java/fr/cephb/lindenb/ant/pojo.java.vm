@@ -3,8 +3,11 @@ ${package}
 
 /**
  * ${prefix}${struct.javaName}
+ * ${struct.description}
+ *
  * This file was automaticaly generated
  * DO NOT EDIT
+ * 
  */
 public class ${prefix}${struct.javaName}
 	{
@@ -57,6 +60,7 @@ public class ${prefix}${struct.javaName}
     #{end}
 	
 	#foreach($field in $struct.fields)
+	/** ${field.description} */
 #if($field.isSet())
 	private boolean[] _${field.name}=new boolean[${field.enumItems.size()}];
 #else
@@ -110,7 +114,7 @@ public class ${prefix}${struct.javaName}
 #elseif($field.getJavaType()=="char")
 		this._${field.name}= row.getString("${field.name}").charAt(0);
 #else
-		// NOT HANDLED ${field.name}
+		throw new java.lang.RuntimeException("not handled ${field.name}");// NOT HANDLED ${field.name}
 #end
 
 #end
@@ -146,8 +150,9 @@ public class ${prefix}${struct.javaName}
 		}
 #else
 	/**
-	 * getter for {field.name}
-	 * @return the value of {field.name}
+	 * getter for ${field.name}
+	 * ${field.description}
+	 * @return the value of ${field.name}
 	 */
 	public  ${field.javaType} get${field.javaName}()
 		{
@@ -155,6 +160,7 @@ public class ${prefix}${struct.javaName}
 		}
 #end
 	#end
+	
 	
 	
 	public String toString()
@@ -173,10 +179,36 @@ public class ${prefix}${struct.javaName}
 		}
 	
 	/**
+	 * return a value at given column
+	 * function should be used in, e.g. , in a TableModel
+	 * @param columnIndex the column index
+	 * @return value at given index
+	 */
+	public Object getValueAt(int columnIndex)
+		{
+		switch(columnIndex)
+			{
+			#foreach($field in $struct.fields)#set($tmp=$velocityCount - 1)
+	        case $tmp:
+	        	{
+				#if($field.isSet())
+					    return get${field.javaName}s();
+				#else
+					    return get${field.javaName}();
+				#end
+				break;
+	        	}
+	 		#end
+	 		default:break;
+ 			}
+ 		throw new java.lang.IndexOutOfBoundsException(""+columnIndex);	
+		}
+	
+	/**
 	 * create a ${struct.javaName} from a SQL row
 	 * @param row the resultset
 	 */
-	public ${struct.javaName} create(java.sql.ResultSet row) throws java.sql.SQLException
+	public static ${struct.javaName} create(java.sql.ResultSet row) throws java.sql.SQLException
 		{
 		return new ${struct.javaName}(row);
 		}
