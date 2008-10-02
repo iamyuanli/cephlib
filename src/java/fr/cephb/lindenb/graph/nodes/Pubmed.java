@@ -2,9 +2,9 @@ package fr.cephb.lindenb.graph.nodes;
 
 import org.w3c.dom.Element;
 
+import fr.cephb.lindenb.bio.ncbi.Database;
 import fr.cephb.lindenb.graph.Graph;
 import fr.cephb.lindenb.graph.Node;
-import fr.cephb.lindenb.ncbi.Database;
 
 public class Pubmed extends Node
 {

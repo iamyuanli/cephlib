@@ -1,32 +1,68 @@
 ${package}
+
+
 /**
  * ${prefix}${struct.javaName}
- *
+ * This file was automaticaly generated
+ * DO NOT EDIT
  */
 public class ${prefix}${struct.javaName}
 	{
-    #foreach($field in $struct.fields)
-    #if($field.enum)
-    public enum ${field.javaName}
+	/** column Headers */
+	public static final String COLUMNS={
+ #foreach($field in $struct.fields)
+        #if($velocityCount>1),#end"${field.name}"
+ #end	
+		};
+	
+	
+    #foreach($field in $struct.fields)#if($field.enum || $field.set)/**
+    * ${field.name}
+    */     
+    public static enum ${field.javaName}
 		{
         #foreach($item in ${field.enumItems})#if($velocityCount>1),#end${item.normalizedName}
         	{
         	@Override
-        	public String getSQLName()
-        		{
-        		return "${item.name}";
-        		}
+        	public String getSQLName() { return "${item.name}"; }
+#if($field.isSet())#set($tmp=$velocityCount - 1)
+			@Override
+            public int getIndex() { return $tmp; }
+#end
         	}
         #end
 			;
+#if($field.isSet())#set($tmp=$velocityCount - 1)
+            public abstract int getIndex();
+#end
+        public abstract String getSQLName();
 		}
-	#end
-	#end
+    /* table mapping sqlname 2 ${field.javaName} */
+    private static java.util.Map<String,${field.javaName}> _SQLNAME2${field.javaName};
+    /* static initialization of SQLNAME2${field.javaName} */
+    static	{
+		_SQLNAME2${field.javaName}=new java.util.HashMap<String,${field.javaName}>();
+		for(${field.javaName} _x:${field.javaName}.values()) _SQLNAME2${field.javaName}.put(_x.getSQLName(),_x);
+		}
+	/** returns a  ${field.javaName} from its sql value
+	 * @param sqlName the name as defined in mysqsql
+	 * @return the value as ${field.javaName} or null if not found
+	 */
+	public static ${field.javaName} get${field.javaName}(String sqlName)
+		{
+		if(sqlName==null) return null;
+		return _SQLNAME2${field.javaName}.get(sqlName);
+		}
+	#{end}
+    #{end}
 	
 	#foreach($field in $struct.fields)
-	private ${field.javaType} ${field.name}=0;
+#if($field.isSet())
+	private boolean[] _${field.name}=new boolean[${field.enumItems.size()}];
+#else
+	private ${field.javaType} _${field.name} = ${field.getValue()} ;
+#end
 	#end
-
     /**
 	 * ${prefix}${struct.javaName}
 	 * constructor
@@ -35,4 +71,113 @@ public class ${prefix}${struct.javaName}
 		{
 		}
 	
+    /**
+	 * ${prefix}${struct.javaName}
+	 * constructor from sql
+	 * @param row the current sql row
+	 */
+	public ${prefix}${struct.javaName}(java.sql.ResultSet row) throws java.sql.SQLException
+		{
+#foreach($field in $struct.fields)
+#if($field.isStream())
+	try
+		{
+		this._${field.name} = org.lindenb.io.IOUtils.getReaderContent(row.getCharacterStream("${field.name}"));
+		}
+	catch(java.io.IOException _err)
+		{
+		throw new java.sql.SQLException(_err);
+		}
+#elseif($field.isSet())
+
+		for(String _s: row.getString("${field.name}").split(","))
+			{
+        	this._${field.name}[get${field.javaName}(_s).getIndex()]=true;
+        	}
+#elseif($field.isEnum())
+		this._${field.name}= get${field.javaName}(row.getString("${field.name}"));
+#elseif($field.getJavaType()=="String")
+		this._${field.name}= row.getString("${field.name}");
+#elseif($field.getJavaType()=="Integer" || $field.getJavaType()=="int")
+		this._${field.name}= row.getInt("${field.name}");
+		#if(${field.isNull()})if(row.wasNull()) this.${field.name}=null;#{end}
+#elseif($field.getJavaType()=="Short" || $field.getJavaType()=="short")
+		this._${field.name}= row.getShort("${field.name}");
+		#if(${field.isNull()})if(row.wasNull()) this.${field.name}=null;#{end}
+#elseif($field.getJavaType()=="Float" || $field.getJavaType()=="float")
+		this._${field.name}= row.getFloat("${field.name}");
+		#if(${field.isNull()})if(row.wasNull()) this.${field.name}=null;#{end}
+#elseif($field.getJavaType()=="char")
+		this._${field.name}= row.getString("${field.name}").charAt(0);
+#else
+		// NOT HANDLED ${field.name}
+#end
+
+#end
+		}	
+	
+	
+	#foreach($field in $struct.fields)
+#if($field.isSet())
+	/**
+	 * test if a ${field.name} is set
+	 * @param ${field.name} the field to test
+	 * @return true if the field was set
+	 */
+	public boolean is${field.javaName}Set(${field.javaName} ${field.name})
+		{
+		return this._${field.name}[ ${field.name}.getIndex() ];
+		}
+	
+	/**
+	 * @return all the ${field.javaName}
+	 */
+	public java.util.Set<${field.javaName}> get${field.javaName}s()
+		{
+		java.util.Set<${field.javaName}> _set=new java.util.HashSet<${field.javaName}>();
+		for(${field.javaName} _item : ${field.javaName}.values())
+			{
+			if(is${field.javaName}Set(_item))
+				{
+				_set.add(_item);
+				}
+			}
+		return _set;
+		}
+#else
+	/**
+	 * getter for {field.name}
+	 * @return the value of {field.name}
+	 */
+	public  ${field.javaType} get${field.javaName}()
+		{
+		return this._${field.name};
+		}
+#end
+	#end
+	
+	
+	public String toString()
+		{
+		StringBuilder b=new StringBuilder("${prefix}${struct.javaName}{");
+#foreach($field in $struct.fields)
+         b.append("#if($velocityCount>1),\n#{end}${field.name}: ");
+#if($field.isSet())
+	     b.append(String.valueOf(get${field.javaName}s()));
+#else
+	     b.append(String.valueOf(get${field.javaName}()));
+#end
+#end
+		b.append("}");
+		return b.toString();
+		}
+	
+	/**
+	 * create a ${struct.javaName} from a SQL row
+	 * @param row the resultset
+	 */
+	public ${struct.javaName} create(java.sql.ResultSet row) throws java.sql.SQLException
+		{
+		return new ${struct.javaName}(row);
+		}
 	}

@@ -9,7 +9,7 @@ import org.lindenb.xml.XMLUtilities;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 
-import fr.cephb.lindenb.ncbi.Database;
+import fr.cephb.lindenb.bio.ncbi.Database;
 
 public abstract class Node
 extends GraphComponent
