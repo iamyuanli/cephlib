@@ -1,4 +1,4 @@
-package fr.cephb.lindenb.ncbi;
+package fr.cephb.lindenb.bio.ncbi;
 
 import java.net.URL;
 

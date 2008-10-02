@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import org.lindenb.bio.Chromosome;
 import org.lindenb.bio.ChromosomePosition;
 import org.lindenb.bio.Strand;
+import org.lindenb.io.IOUtils;
 
 import fr.cephb.lindenb.bio.snp.RsId;
 
@@ -31,6 +32,7 @@ private int weight;
 
 protected AbstractSNP(ResultSet row) throws SQLException
 	{
+	IOUtils.getReaderContent(row.getCharacterStream(1));
 	String chrom	= row.getString("chrom");
 	int start	= row.getInt("chromStart");
 	int end	= row.getInt("chromEnd");

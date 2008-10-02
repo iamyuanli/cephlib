@@ -4,9 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,9 +16,7 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.context.Context;
 import org.lindenb.sql.SQLUtilities;
-
 
 
 import fr.cephb.lindenb.bio.ucsc.UCSCConstants;
@@ -41,8 +37,9 @@ static public class Identifier
 		}
 	public String getName() { return name; }
 	public String getJavaName() {return javaName(getName());}
-	public String getnormalizedName() {return normalizeName(getName());}
+	public String getNormalizedName() {return normalizeName(getName());}
 	}
+
 static public class Field
 	extends Identifier
 	{
@@ -52,18 +49,68 @@ static public class Field
 	private String defaultValue;
 	private String extra;
 	public Field() { }
-
+	public boolean isStream()
+		{
+		return
+			this.type.equals("blob") ||
+			this.type.equals("text") ||
+			this.type.equals("longblob");
+		}
 	public String getType() { return type; }
 	public String getNull() {return NULL;}
+	public boolean isNull() {return !NULL.equals("NO");}
 	public String getKey() {return key;}
-	public String getDefaultValue() {return defaultValue;}
+	public String getValue()
+		{
+		if(defaultValue==null) return "null";
+		if(isEnum()) return getJavaName()+"."+ new Identifier(this.defaultValue).getNormalizedName();
+		if(getJavaType().equals("String")) return "\""+this.defaultValue+"\"";
+		if(getJavaType().equals("char")) return "\'"+this.defaultValue+"\'";
+		return this.defaultValue;
+		}
 	public String getExtra() {return extra;}
-	public String getJavaType() { return type; }
+	
+	public String getJavaType()
+		{
+		int size=-1;
+		if(isEnum())
+			{
+			return getJavaName();
+			}
+		if(isSet())
+			{
+			return "java.util.Set<"+getJavaName()+">";
+			}
+		String s=type;
+		int i=s.indexOf('(');
+		if(i!=-1)
+			{
+			int j=s.indexOf(')',i+1);
+			size=Integer.parseInt(s.substring(i+1,j));
+			s=s.substring(0,i);
+			}
+		if(s.equals("char") && size==1) return (isNull()?"Character":"char");
+		if(s.equals("varchar") || s.equals("char") || 
+		   s.equals("blob")|| s.equals("longblob")) return "String";
+		if(s.equals("int")) return (isNull()?"Integer":"int");
+		if(s.equals("smallint")) return (isNull()?"Short":"short");
+		if(s.equals("float")) return (isNull()?"Float":"float");
+		throw new IllegalArgumentException(type);
+		}
 	public boolean isEnum() { return this.type.startsWith("enum(");}
+	public boolean isSet() { return this.type.startsWith("set(");}
 	public Vector<Identifier> getEnumItems()
 		{
 		String s= getType();
-		s=s.substring(5);
+		if(isSet())
+			{
+			s=s.substring(4);
+			}
+		else if(isEnum())
+			{
+			s=s.substring(5);
+			}
+		
 		s=s.substring(0,s.length()-1);
 		Vector<Identifier> e=new Vector<Identifier>();
 		for(String tok: s.split("[,]"))
@@ -185,7 +232,6 @@ public void execute() throws BuildException
 		for(String table: this.tables.split("[ \t,;]+"))
 			{
 			if(table.length()==0) continue;
-			VelocityEngine ve = new VelocityEngine();
 			Template template  = Velocity.getTemplate("pojo.java.vm");
 			
 			File classFile=new File(this.todir,javaName(table)+".java");
@@ -212,14 +258,21 @@ public void execute() throws BuildException
 				struct.fields.add(f);
 				f.name = row.getString(1);
 				f.type = row.getString(2);
-				
+				f.NULL = row.getString(3);
+				f.key = row.getString(4);
+				f.defaultValue = row.getString(5);
+				f.extra = row.getString(6);
+				/*
 				for(int i=0;i< row.getMetaData().getColumnCount();++i)
 					{
 					System.out.println(""+(i+1)+" : "+row.getMetaData().getColumnLabel(i+1)+" : "+row.getString(i+1));
 					}
 				System.out.println("=");
+				*/
 				}
 			pstmt.close();
+			
+			
 			
 			VelocityContext context= new VelocityContext();
 			context.put("package",
@@ -253,7 +306,7 @@ public static void main(String[] args)
 		p.setTodir(new File("/tmp/"));
 		p.setTemplates(new File("/home/pierre/cephlib/src/java/fr/cephb/lindenb/ant/"));
 		p.setTables("snp129 refGene");
-		p.setPackage("test");
+		p.setPackage("fr.cephb.lindenb.bio.ucsc.hg18");
 		p.execute();
 	} catch (Exception e) {
 		e.printStackTrace();

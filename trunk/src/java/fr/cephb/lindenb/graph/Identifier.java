@@ -2,7 +2,7 @@ package fr.cephb.lindenb.graph;
 
 import java.net.URL;
 
-import fr.cephb.lindenb.ncbi.Database;
+import fr.cephb.lindenb.bio.ncbi.Database;
 
 public class Identifier
 {
