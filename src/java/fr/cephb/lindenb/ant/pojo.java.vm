@@ -257,7 +257,7 @@ public class ${prefix}${struct.javaName}
 		StringBuilder b=new StringBuilder("${prefix}${struct.javaName}{");
 		for(int i=0;i< COLUMNS.length;++i)
 			{
-			if(i >0) b.append('\t');
+			if(i >0) b.append(',');
 			b.append(COLUMNS[i]).append(":").
 			  append(String.valueOf(getValueAt(i)));
 			}
@@ -296,4 +296,48 @@ public class ${prefix}${struct.javaName}
 		{
 		return new ${prefix}${struct.javaName}(row);
 		}
+		
+		
+		/**
+	 * select one a Snp129 from java.sql.ResultSet
+	 * @param row the resultset
+	 * @return the ${prefix}${struct.javaName} found
+	 */
+	public static ${prefix}${struct.javaName} selectOne(java.sql.ResultSet row) throws java.sql.SQLException
+		{
+		${prefix}${struct.javaName} _value=selectOneOrZero(row);
+		if(_value==null) throw new  java.sql.SQLException("empty result");
+		return _value;
+		}
+	
+	/**
+	 * select one or zero Snp129 from java.sql.ResultSet
+	 * @param row the resultset
+	 * @return the ${prefix}${struct.javaName} found or NULL
+	 */
+	public static ${prefix}${struct.javaName} selectOneOrZero(java.sql.ResultSet row) throws java.sql.SQLException
+		{
+		${prefix}${struct.javaName} _value=null;
+		while(row.next())
+			{
+			if(_value!=null) throw new  java.sql.SQLException("found twice");
+			_value= new ${prefix}${struct.javaName}(row);
+			}
+		return _value;
+		}
+	/**
+	 * select all the results in a java.sql.ResultSet
+	 * @param row the resultset
+	 * @return a collection containing all the items
+	 */
+	public static java.util.Collection<${prefix}${struct.javaName}> select(java.sql.ResultSet row) throws java.sql.SQLException
+		{
+		java.util.ArrayList<${prefix}${struct.javaName}> _v=new java.util.ArrayList<${prefix}${struct.javaName}>();
+		while(row.next())
+			{
+			_v.add(new ${prefix}${struct.javaName}(row));
+			}
+		return _v;
+		}	
+		
 	}
