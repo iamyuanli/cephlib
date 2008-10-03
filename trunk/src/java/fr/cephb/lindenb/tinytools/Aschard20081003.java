@@ -215,6 +215,7 @@ public static void main(String[] args) {
 	    if(rsSet.isEmpty())
 	    	{
 	    	System.err.println("Empty Input");
+	    	return;
 	    	}
 	    app.out=System.out;
 	    if(fileout!=null) app.out=new PrintStream(new FileOutputStream(fileout));
