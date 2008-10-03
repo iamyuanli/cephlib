@@ -1,5 +1,6 @@
 package fr.cephb.lindenb.bio.ucsc;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,7 +31,7 @@ private float aHetSE;
 private String func;
 private int weight;
 
-protected AbstractSNP(ResultSet row) throws SQLException
+protected AbstractSNP(ResultSet row) throws SQLException,IOException
 	{
 	IOUtils.getReaderContent(row.getCharacterStream(1));
 	String chrom	= row.getString("chrom");
