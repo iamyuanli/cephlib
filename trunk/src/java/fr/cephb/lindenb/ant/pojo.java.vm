@@ -12,15 +12,60 @@ ${package}
 public class ${prefix}${struct.javaName}
 	{
 	/** column Headers */
-	public static final String COLUMNS={
+	public static final String COLUMNS[]=new String[]{
  #foreach($field in $struct.fields)
         #if($velocityCount>1),#end"${field.name}"
  #end	
 		};
 	
+    /**
+	 * A tableModel for Swing
+	 *
+	 */
+	public static class TableModel
+		extends org.lindenb.swing.table.GenericTableModel<${prefix}${struct.javaName}>
+		{
+		private static final long serialVersionUID = 1L;
+		@Override
+		public int getColumnCount() {
+			return COLUMNS.length;
+			}
+		@Override
+		public Object getValueOf(${prefix}${struct.javaName} object, int column) {
+			return object.getValueAt(column);
+			}
+		@Override
+		public String getColumnName(int column) {
+			return COLUMNS[column];
+			}
+		@Override
+		public Class<?> getColumnClass(int columnIndex) {
+			switch(columnIndex)
+				{
+#foreach($field in $struct.fields)#set($tmp=$velocityCount - 1)
+                case $tmp:
+				#if($field.isSet()) return java.util.Set.class;
+				#elseif($field.isEnum()) return ${field.javaName}.class;
+				#elseif($field.getJavaType()=="String") return String.class;
+				#elseif($field.getJavaType()=="Integer" || $field.getJavaType()=="int") return Integer.class;
+				#elseif($field.getJavaType()=="Short" || $field.getJavaType()=="short") return Short.class;
+				#elseif($field.getJavaType()=="Float" || $field.getJavaType()=="float") return Float.class;
+				#elseif($field.getJavaType()=="char")  return Character.class;
+#else
+		throw new java.lang.RuntimeException("not handled ${field.name}");// NOT HANDLED ${field.name}
+#end
+#end
+				default:break;
+				}
+			throw new java.lang.IndexOutOfBoundsException(""+columnIndex);	
+			}
+		}
 	
-    #foreach($field in $struct.fields)#if($field.enum || $field.set)/**
+	
+    #foreach($field in $struct.fields)#if($field.enum || $field.set)
+   /**
     * ${field.name}
+    * ${field.description}
     */     
     public static enum ${field.javaName}
 		{
@@ -160,21 +205,63 @@ public class ${prefix}${struct.javaName}
 		}
 #end
 	#end
+
+    /**
+     * print this object to a stream
+     * @param out the stream
+     */
+	public void print(java.io.PrintWriter out)
+		{
+		for(int i=0;i< COLUMNS.length;++i)
+			{
+			if(i >0)out.print('\t');
+			out.print(String.valueOf(getValueAt(i)));
+			}
+		}
+
+    /**
+     * print this object to a stream and add a CR at the end
+     * @param out the stream
+     */	
+	public void println(java.io.PrintWriter out)
+		{
+		print(out);out.println();
+		}
+		
+    /**
+     * print this object to a stream
+     * @param out the stream
+     */
+	public void print(java.io.PrintStream out)
+		{
+		for(int i=0;i< COLUMNS.length;++i)
+			{
+			if(i >0)out.print('\t');
+			out.print(String.valueOf(getValueAt(i)));
+			}
+		}
+
+    /**
+     * print this object to a stream and add a CR at the end
+     * @param out the stream
+     */	
+	public void println(java.io.PrintStream out)
+		{
+		print(out);out.println();
+		}
+
 	
-	
-	
+	@Override
 	public String toString()
 		{
 		StringBuilder b=new StringBuilder("${prefix}${struct.javaName}{");
-#foreach($field in $struct.fields)
-         b.append("#if($velocityCount>1),\n#{end}${field.name}: ");
-#if($field.isSet())
-	     b.append(String.valueOf(get${field.javaName}s()));
-#else
-	     b.append(String.valueOf(get${field.javaName}()));
-#end
-#end
-		b.append("}");
+		for(int i=0;i< COLUMNS.length;++i)
+			{
+			if(i >0) b.append('\t');
+			b.append(COLUMNS[i]).append(":").
+			  append(String.valueOf(getValueAt(i)));
+			}
+		b.append("\n}");
 		return b.toString();
 		}
 	
@@ -190,14 +277,11 @@ public class ${prefix}${struct.javaName}
 			{
 			#foreach($field in $struct.fields)#set($tmp=$velocityCount - 1)
 	        case $tmp:
-	        	{
-				#if($field.isSet())
+#if($field.isSet())
 					    return get${field.javaName}s();
-				#else
+#else
 					    return get${field.javaName}();
-				#end
-				break;
-	        	}
+#end
 	 		#end
 	 		default:break;
  			}
@@ -208,8 +292,8 @@ public class ${prefix}${struct.javaName}
 	 * create a ${struct.javaName} from a SQL row
 	 * @param row the resultset
 	 */
-	public static ${struct.javaName} create(java.sql.ResultSet row) throws java.sql.SQLException
+	public static ${prefix}${struct.javaName} create(java.sql.ResultSet row) throws java.sql.SQLException
 		{
-		return new ${struct.javaName}(row);
+		return new ${prefix}${struct.javaName}(row);
 		}
 	}
