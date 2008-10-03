@@ -3,12 +3,16 @@
  */
 package fr.cephb.lindenb.tinytools;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Set;
 import java.util.Vector;
 
 import org.lindenb.util.Compilation;
 
 import fr.cephb.lindenb.bio.snp.RsId;
+import fr.cephb.lindenb.bio.ucsc.UCSCConstants;
 import fr.cephb.lindenb.sql.MySQLConstants;
 
 /**
@@ -17,14 +21,15 @@ import fr.cephb.lindenb.sql.MySQLConstants;
  */
 public class AboutRS01
 	{
-	public void run(Set<RsId> set)
+	public void run(Set<RsId> set) throws SQLException
 		{
+		
 		Vector<RsId> snps= new Vector<RsId>(set);
 		int start=0;
 		while(!snps.isEmpty())
 			{
 			
-			snps.
+		
 			}
 		}
 	

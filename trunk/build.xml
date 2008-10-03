@@ -3,19 +3,39 @@
  <property environment="env"/><!-- prefix for environnement properties -->
  <property name="derby.lib" value="${env.JAVA_HOME}/db/lib"/>
  <property name="lindenb.src" value="../lindenb/src/java"/>
-
-
+ <property name="velocity.home" value="/usr/local/package/velocity-1.5"/>
+ <property name="velocity.lib" value="${velocity.home}"/>
+ <property name="jdbc.version" value="5.1.6"/>
+ <property name="jdbc.home" value="/usr/local/package/mysql-connector-java-${jdbc.version}"/>
+	
 <!-- properties for java web start -->
 <property name="key.alias" value="tititoto"/>
 <property name="keystore.location" value="/tmp/project.keys"/>
 <property name="keystore.password" value="tititoto"/>
 
+ <path id="libraries">
+	 <pathelement path="${velocity.lib}/velocity-1.5.jar"/>
+	 <pathelement path="${velocity.lib}/velocity-dep-1.5.jar"/>
+ 	 <pathelement path="${jdbc.home}//mysql-connector-java-${jdbc.version}-bin.jar"/>
+ </path>
+	
  <target name="build-ant-tasks">
 	<mkdir dir="build/ant"/>
-	<javac destdir="build/ant">
+	<echo>Compiling ceph tasks</echo>
+ 	<javac destdir="build/ant">
+	  <src path="src/java"/>
+ 	  <src path="${lindenb.src}"/>
+	  <include name="**/UCSCPojoTask.java"/>
+ 		<classpath>
+ 			 <path refid="libraries"/>
+		</classpath>
+	</javac>
+ 	<echo>Compiling lindenb's tasks</echo>
+ 	<javac destdir="build/ant">
 	  <src path="${lindenb.src}"/>
 	  <include name="org/lindenb/ant/*.java"/>
 	</javac>
+
  </target>
 
  <target name="declare-ant-tasks" depends="build-ant-tasks">
@@ -25,6 +45,11 @@
     <taskdef name="makeSplash"
 	     classname="org.lindenb.ant.SplashTask"
              classpath="build/ant"/>
+ 	<taskdef name="ucscPojo"
+ 			classpathref="libraries"
+ 			classname="fr.cephb.lindenb.ant.UCSCPojoTask"
+ 			classpath="build/ant"
+ 		/>
  </target>
 
  <target name="generate-keys">
@@ -35,8 +60,26 @@
 <target name="all" depends="graph4ncbi">
 </target>
 
-
-
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
+<target name="test" depends="declare-ant-tasks">
+	<ucscPojo
+			prefix="Hg18"
+			package="fr.cephb.lindenb.bio.ucsc.hg18"
+			templatesDir="src/java/fr/cephb/lindenb/ant"
+			todir="src/java/fr/cephb/lindenb/bio/ucsc/hg18"
+			tables="snp129,cytoBand,knownGene,hapmapSnpsCEU,refGene"
+	/>
+	<replace file="src/java/fr/cephb/lindenb/bio/ucsc/hg18/Hg18HapmapSnpsCEU.java"
+		token="Hg18HapmapSnpsCEU"
+		value="Hg18HapmapSnps"
+		/>
+	<move file="src/java/fr/cephb/lindenb/bio/ucsc/hg18/Hg18HapmapSnpsCEU.java"
+		tofile="src/java/fr/cephb/lindenb/bio/ucsc/hg18/Hg18HapmapSnps.java"
+		/>
+</target>
  <!-- =================================================================== -->
  <!-- =================================================================== -->
  <!-- =================================================================== -->

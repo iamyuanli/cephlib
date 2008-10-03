@@ -70,7 +70,7 @@ static public class Field
 		if(defaultValue==null) return "null";
 		if(isEnum()) return getJavaName()+"."+ new Identifier(this.defaultValue).getNormalizedName();
 		if(getJavaType().equals("String")) return "\""+this.defaultValue+"\"";
-		if(getJavaType().equals("char")) return "\'"+this.defaultValue+"\'";
+		if(getJavaType().equals("char")) return "\'"+(this.defaultValue.length()==0?" ":this.defaultValue)+"\'";
 		return this.defaultValue;
 		}
 	public String getExtra() {return extra;}
@@ -156,7 +156,7 @@ private String tables="";
 private String prefix="";
 private String javaPackage="";
 private File todir;
-private File templates;
+private File templatesDir;
 private boolean force=true;
 
 public UCSCPojoTask()
@@ -181,13 +181,14 @@ public void setPackage(String javaPackage) {
 	this.javaPackage = javaPackage;
 	}
 
-public void setTemplates(File templates) {
-	this.templates = templates;
+public void setTemplatesDir(File templatesDir) {
+	this.templatesDir = templatesDir;
 	}
 private static String normalizeName(String s)
 	{
 	if(s.equals("+")) return "PLUS";
 	if(s.equals("-")) return "MINUS";
+	if(s.equals("?")) return "UNKNOWN";
 	if(s.equals("class")) return "clazz";
 	return s.replace('-', '_').replaceAll("'", "_prime");
 	}
@@ -223,13 +224,13 @@ public void setPrefix(String prefix) {
 @Override
 public void execute() throws BuildException
 	{
-	if(this.templates==null ) throw new BuildException("@template missing");
-	if(!this.templates.exists() ) throw new BuildException(this.templates.toString()+" does not exists");
-	if(!this.templates.isDirectory() ) throw new BuildException(this.templates.toString()+" is not a directory");
+	if(this.templatesDir==null ) throw new BuildException("@templatesDir missing");
+	if(!this.templatesDir.exists() ) throw new BuildException(this.templatesDir.toString()+" does not exists");
+	if(!this.templatesDir.isDirectory() ) throw new BuildException(this.templatesDir.toString()+" is not a directory");
 	if(this.todir==null ) throw new BuildException("@todir missing");
 	if(!this.todir.exists() ) throw new BuildException(this.todir.toString()+" does not exists");
 	if(!this.todir.isDirectory() ) throw new BuildException(this.todir.toString()+" is not a directory");
-	
+	if(this.tables.trim().length()==0) throw new BuildException("@tables is emty");
 	try
 		{
 		Class.forName(MySQLConstants.DRIVER);
@@ -244,7 +245,7 @@ public void execute() throws BuildException
 		
 		Properties props = new Properties();
         props.put(VelocityEngine.INPUT_ENCODING, "utf-8");
-        props.put(VelocityEngine.FILE_RESOURCE_LOADER_PATH,this.templates.toString());
+        props.put(VelocityEngine.FILE_RESOURCE_LOADER_PATH,this.templatesDir.toString());
         Velocity.init(props);
         
 		
@@ -360,7 +361,7 @@ public void execute() throws BuildException
 		}
 	}
 
-
+/*
 public static void main(String[] args)
 	{
 	try {
@@ -374,5 +375,5 @@ public static void main(String[] args)
 	} catch (Exception e) {
 		e.printStackTrace();
 	}
-	}
+	}*/
 }
