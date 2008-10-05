@@ -367,8 +367,8 @@ public static void main(String[] args)
 	try {
 		UCSCPojoTask p=new UCSCPojoTask();
 		p.setTodir(new File("/tmp/"));
-		p.setTemplates(new File("/home/pierre/cephlib/src/java/fr/cephb/lindenb/ant/"));
-		p.setTables("snp129 cytoBand");
+		p.setTemplatesDir(new File("/home/pierre/cephlib/src/java/fr/cephb/lindenb/ant/"));
+		p.setTables("snp129 cytoBand refGene");
 		p.setPrefix("Hg18");
 		p.setPackage("fr.cephb.lindenb.bio.ucsc.hg18");
 		p.execute();
