@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://anybody.cephb.fr/perso/lindenb/tinytools/" href="aschard20081009.jnlp">
+   <information>
+      <title>About SNP's</title>
+      <vendor>http://plindenbaum.blogspot.com/</vendor>
+      <description>Fetch Informations about SNP's</description>
+      <description kind="short">Fetch Informations about SNP's</description>
+      <offline-allowed/>
+   </information>
+   <offline-allowed/>
+   <security>
+      <all-permissions/>
+   </security>
+   <resources>
+      <j2se version="1.6+"/>
+      <jar href="aschard20081009.jar"/> 
+      <jar href="jdbc.jar"/> 
+   </resources>
+   <application-desc main-class="fr.cephb.lindenb.tinytools.Aschard20081009"/>
+</jnlp>
