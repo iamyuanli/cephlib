@@ -28,12 +28,25 @@ import fr.cephb.lindenb.sql.MySQLConstants;
 public class Aschard20081003
 {
 public static final String HAPMAPDB[]=new String[]{"hapmapSnpsCEU","hapmapSnpsCHB","hapmapSnpsJPT","hapmapSnpsYRI"};
-
+/** output stream */
 private PrintStream out= System.out;
+/** jdbc uri */
+private String jdbcURI= MySQLConstants.URI+"://localhost/hg18?user=anonymous&password=";
+
 private PrintStream cout()
 	{
 	return out;
 	}
+
+public void setOutputStream(PrintStream out)
+	{
+	this.out=out;
+	}
+
+public void setJdbcURI(String jdbcURI) {
+	this.jdbcURI = jdbcURI;
+	}
+
 /*
 private static String collection2String(Collection<?> col)
 	{
@@ -42,14 +55,10 @@ private static String collection2String(Collection<?> col)
 	for()
 	}*/
 
-private void run(Set<RsId> rsSet) throws SQLException
+ void run(Set<RsId> rsSet) throws SQLException
 	{
 	final char TAB='\t';
-	Connection con= DriverManager.getConnection(
-			MySQLConstants.URI+"://localhost/hg18",
-			"anonymous",
-			""
-			);
+	Connection con= DriverManager.getConnection(jdbcURI);
 	cout().print(
 		"#rs" +TAB+
 		"chromosome"  +TAB+
