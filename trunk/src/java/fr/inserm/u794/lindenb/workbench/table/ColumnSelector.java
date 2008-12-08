@@ -101,7 +101,7 @@ public void setSource(List<Column> columns)
 
 public List<Column> getSelectedColumns()
 	{
-	return this.right.elements();
+	return (List<Column>)this.right.elements();
 	}
 
 public static void main(String[] args) {

@@ -14,7 +14,7 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseException;
 
-import fr.inserm.u794.lindenb.oldwb.Berkeley;
+import fr.inserm.u794.lindenb.workbench.Berkeley;
 
 public class Index
 	{

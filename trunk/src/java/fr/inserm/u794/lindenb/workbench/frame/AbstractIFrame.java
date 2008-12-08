@@ -3,6 +3,7 @@ package fr.inserm.u794.lindenb.workbench.frame;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
+import javax.swing.ActionMap;
 import javax.swing.JInternalFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -20,6 +21,7 @@ public class AbstractIFrame extends JInternalFrame
 	private int id=(++ID_GENERATOR);
 	private Workbench owner;
 	protected JPanel contentPane;
+	protected ActionMap actionMap=new ActionMap();
 	protected AbstractIFrame(Workbench owner,String title)
 		{
 		super(title,true,true,true,true);

@@ -13,7 +13,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Properties;
+import java.util.zip.GZIPInputStream;
 
 
 import javax.swing.AbstractAction;
@@ -32,6 +34,7 @@ import javax.swing.JToolBar;
 import javax.swing.border.EmptyBorder;
 
 
+import org.lindenb.berkeley.SingleMapDatabase;
 import org.lindenb.io.IOUtils;
 import org.lindenb.lang.ThrowablePane;
 import org.lindenb.swing.SwingUtils;
@@ -41,9 +44,11 @@ import org.lindenb.util.TimeUtils;
 
 import com.sleepycat.je.DatabaseConfig;
 
+import fr.inserm.u794.lindenb.workbench.frame.RefFrame;
 import fr.inserm.u794.lindenb.workbench.frame.TableFrame;
 import fr.inserm.u794.lindenb.workbench.table.Row;
 import fr.inserm.u794.lindenb.workbench.table.Table;
+import fr.inserm.u794.lindenb.workbench.table.TableRef;
 
 /**
  * @author lindenb
@@ -53,6 +58,7 @@ public class Workbench extends JFrame
 	{
 
 	private static final String ACTION_LOAD_TABLE= "action.load.table";
+	private static final String ACTION_LOAD_URL= "action.load.url";
 	private static final String ACTION_QUIT= "action.quit";
 	private static final long serialVersionUID = 1L;
 	private static final String PREFS_FILE=".inserm-workbench-prefs.xml";
@@ -61,6 +67,8 @@ public class Workbench extends JFrame
 	private JPanel contentPane;
 	private Properties preferences= new Properties();
 	private ActionMap actionMap=new ActionMap();
+	/** all table Ref */
+	private TableRef.Model tableRefModel= new TableRef.Model();
 	
 	public Workbench()
 		{
@@ -117,6 +125,16 @@ public class Workbench extends JFrame
 			};
 		this.actionMap.put(ACTION_LOAD_TABLE,action);
 		
+		action=new AbstractAction("Load URL...")
+			{
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuLoadURL();
+				}
+			};
+		this.actionMap.put(ACTION_LOAD_URL,action);
+		
 		action=new AbstractAction("Quit")
 			{
 			private static final long serialVersionUID = 1L;
@@ -135,6 +153,7 @@ public class Workbench extends JFrame
 		JMenu sub= new JMenu("Load Table");
 		menu.add(sub);
 		sub.add(this.actionMap.get(ACTION_LOAD_TABLE));
+		sub.add(this.actionMap.get(ACTION_LOAD_URL));
 		menu.add(new JSeparator());
 		menu.add(this.actionMap.get(ACTION_QUIT));
 		
@@ -144,8 +163,15 @@ public class Workbench extends JFrame
 		toolbar.add(new JButton(this.actionMap.get(ACTION_LOAD_TABLE)));
 		
 		
-		addWindowListener(new WindowAdapter()
+		this.addWindowListener(new WindowAdapter()
 			{
+			@Override
+			public void windowOpened(WindowEvent e)
+				{
+				RefFrame f= new RefFrame(Workbench.this,Workbench.this.tableRefModel);
+				getDesktop().add(f);
+				f.setVisible(true);
+				}
 			@Override
 			public void windowClosing(WindowEvent e)
 				{
@@ -248,6 +274,71 @@ public class Workbench extends JFrame
 			ThrowablePane.show(this, e);
 			}
 		}
+	
+	public void doMenuLoadURL()
+		{
+		UrlLoader loader= new UrlLoader();
+		if(JOptionPane.showConfirmDialog(this, loader,"Select...",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION) return;
+		if(loader.getSelectedURL()==null || loader.getColumns().isEmpty()) return;
+		
+		
+		try {
+			Table table= new Table();
+			table.setColumnLabels(loader.getColumns());
+			table.setDatabase(Berkeley.getInstance().createTable());
+			table.setName(loader.getSelectedURL().toString());
+			
+			BufferedReader r= null;
+			try
+				{
+				InputStream in= loader.getSelectedURL().openStream();
+				if(loader.getSelectedURL().getPath().toLowerCase().endsWith(".gz"))
+					{
+					in= new GZIPInputStream(in);
+					}
+				r=new BufferedReader(new InputStreamReader(in));
+				String line;
+				if(loader.isFirstLineHeader())
+					{
+					line= r.readLine();
+					if(line==null) throw new IOException("Cannot get header");
+					//then ignore
+					}
+				
+				int nLine=0;
+				while((line=r.readLine())!=null)
+					{
+					String tokens[]=loader.getDelimiter().split(line);
+					Row row= new Row(tokens);
+					while(row.size()< table.getColumns().size()) row=row.add("");
+					table.getDatabase().put(
+							nLine,
+							row
+							);
+					nLine++;
+					}
+				table.setRowCount(nLine);
+				r.close();
+				
+				TableFrame frame= new TableFrame(this,table);
+				getDesktop().add(frame);
+				frame.setVisible(true);
+				}
+			catch(Exception err)
+				{
+				err.printStackTrace();
+				throw err;
+				}
+			finally
+				{
+				IOUtils.safeClose(r);
+				}
+		} catch (Exception e)
+			{
+			ThrowablePane.show(this, e);
+			}
+		}
+	
 	
 	public static void main(String[] args) {
 		try {
