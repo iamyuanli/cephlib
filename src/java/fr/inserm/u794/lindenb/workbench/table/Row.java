@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.tools.ant.types.selectors.modifiedselector.ModifiedSelector.ComparatorName;
 import org.lindenb.util.Cast;
 
 import com.sleepycat.bind.tuple.TupleBinding;

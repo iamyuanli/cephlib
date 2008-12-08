@@ -4,6 +4,7 @@ import java.io.File;
 import org.lindenb.berkeley.SingleMapDatabase;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
+import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseException;
@@ -12,6 +13,7 @@ import com.sleepycat.je.EnvironmentConfig;
 
 import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
+import fr.inserm.u794.lindenb.workbench.table.TableRef;
 
 
 
@@ -23,6 +25,7 @@ public class Berkeley
 	private static File dbHome=new File(System.getProperty("user.home","."),DEFAULT_BERKELY_FILE);
 	private static Berkeley INSTANCE=null;
 	private Environment env=null;
+	private SingleMapDatabase<Long, TableRef> tableRefDB;
 	
 	private Berkeley()
 		{
@@ -82,11 +85,28 @@ public class Berkeley
 					
 					Berkeley berkeley= new Berkeley();
 					berkeley.env=new Environment(dbHome,cfg);
+					
+					DatabaseConfig dbcfg= new DatabaseConfig();
+					dbcfg.setAllowCreate(true);
+					dbcfg.setExclusiveCreate(false);
+					dbcfg.setReadOnly(false);
+					dbcfg.setTransactional(true);
+					berkeley.tableRefDB= new SingleMapDatabase<Long, TableRef>(
+						berkeley.env.openDatabase(null, "tableref", dbcfg), 
+						new LongBinding(),
+						TableRef.BINDING
+						);
+					
+					
 					INSTANCE=berkeley;
 					}
 				}
 			}
 		return INSTANCE;
+		}
+	
+	public SingleMapDatabase<Long, TableRef> getTableRefDB() {
+		return tableRefDB;
 		}
 	
 	public SingleMapDatabase<Integer, Row> createTable()

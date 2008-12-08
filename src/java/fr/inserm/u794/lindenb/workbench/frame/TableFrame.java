@@ -3,7 +3,6 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
@@ -13,19 +12,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 import java.util.zip.GZIPOutputStream;
 
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import javax.swing.AbstractAction;
-import javax.swing.ActionMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -33,7 +33,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -51,17 +50,15 @@ import org.lindenb.berkeley.SingleMapDatabase;
 import org.lindenb.io.PreferredDirectory;
 import org.lindenb.lang.ThrowablePane;
 import org.lindenb.sql.SQLUtilities;
-import org.lindenb.util.NamedKey;
+import org.lindenb.swing.layout.InputLayout;
 import org.lindenb.util.NamedObject;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.OperationStatus;
-import com.sun.org.apache.bcel.internal.util.BCELifier;
+import com.sleepycat.je.Transaction;
 
-import fr.cephb.lindenb.tinytools.Aschard20081003;
-import fr.cephb.lindenb.tinytools.Aschard20081009;
 import fr.inserm.u794.lindenb.workbench.Berkeley;
 import fr.inserm.u794.lindenb.workbench.SnpInfo;
 import fr.inserm.u794.lindenb.workbench.Workbench;
@@ -72,12 +69,14 @@ import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
 import fr.inserm.u794.lindenb.workbench.table.Table;
 import fr.inserm.u794.lindenb.workbench.table.TableModel;
+import fr.inserm.u794.lindenb.workbench.table.TableRef;
 
 
 public class TableFrame
 	extends AbstractIFrame
 	{
 	private static final long serialVersionUID = 1L;
+	private static final String ACTION_PERSIST="worbench.tableframe.persist";
 	private static final String ACTION_EXPORT="worbench.tableframe.export";
 	private static final String ACTION_SNPINFO="worbench.tableframe.snpinfo";
 	private static final String ACTION_JOIN="worbench.tableframe.join";
@@ -87,7 +86,7 @@ public class TableFrame
 	private TableModel tableModel;
 	private Table model;
 	private JTextField informationField;
-	private ActionMap actionMap= new ActionMap();
+	
 	public TableFrame(
 			Workbench owner,
 			Table model
@@ -152,7 +151,7 @@ public class TableFrame
 				}
 			};
 			
-		actionMap.put(ACTION_EXPORT,action);
+		super.actionMap.put(ACTION_EXPORT,action);
 		
 		action = new AbstractAction("Join Snp Info...")
 			{
@@ -163,7 +162,19 @@ public class TableFrame
 				doMenuJoinSNPInfo();
 				}
 			};
-		actionMap.put(ACTION_SNPINFO,action);
+		super.actionMap.put(ACTION_SNPINFO,action);
+		
+		action = new AbstractAction("Persists")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuPersists();
+				}
+			};
+		super.actionMap.put(ACTION_PERSIST,action);
+		
 		
 		action = new AbstractAction("Join Table...")
 			{
@@ -174,7 +185,7 @@ public class TableFrame
 				doMenuJoin();
 				}
 			};
-		actionMap.put(ACTION_JOIN,action);
+		super.actionMap.put(ACTION_JOIN,action);
 		
 		action = new AbstractAction("Filter by Javascript...")
 			{
@@ -185,7 +196,7 @@ public class TableFrame
 				doMenuJavaScriptFilter();
 				}
 			};
-		actionMap.put(ACTION_JS_EXECUTE,action);
+		super.actionMap.put(ACTION_JS_EXECUTE,action);
 			
 			
 		action = new AbstractAction("Uniq...")
@@ -197,21 +208,22 @@ public class TableFrame
 				doMenuUniq();
 				}
 			};
-		actionMap.put(ACTION_UNIQ,action);
+		super.actionMap.put(ACTION_UNIQ,action);
 		
 		
 		
-		getJMenuBar().getMenu(0).add(actionMap.get(ACTION_EXPORT));
+		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_EXPORT));
+		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_PERSIST));
 		
 		JMenu menu= new JMenu("Table");
 		getJMenuBar().add(menu);
-		menu.add(actionMap.get(ACTION_SNPINFO));
-		menu.add(actionMap.get(ACTION_JOIN));
-		menu.add(actionMap.get(ACTION_JS_EXECUTE));
-		menu.add(actionMap.get(ACTION_UNIQ));
+		menu.add(super.actionMap.get(ACTION_SNPINFO));
+		menu.add(super.actionMap.get(ACTION_JOIN));
+		menu.add(super.actionMap.get(ACTION_JS_EXECUTE));
+		menu.add(super.actionMap.get(ACTION_UNIQ));
 		
-		toolbar.add(new JButton(actionMap.get(ACTION_EXPORT)));
-		toolbar.add(new JButton(actionMap.get(ACTION_JOIN)));
+		toolbar.add(new JButton(super.actionMap.get(ACTION_EXPORT)));
+		toolbar.add(new JButton(super.actionMap.get(ACTION_JOIN)));
 		}
 	
 	
@@ -520,7 +532,7 @@ public class TableFrame
 			}
 		}
 	
-	
+	@SuppressWarnings("unchecked")
 	private void doMenuJoin()
 		{
 		JoinPane joinPane= new JoinPane();
@@ -660,9 +672,64 @@ public class TableFrame
 		}
 	
 	
+	private void doMenuPersists()
+		{
+		JPanel pane= new JPanel(new BorderLayout());
+		JPanel grid= new JPanel(new InputLayout());
+		pane.add(grid,BorderLayout.CENTER);
+		grid.add(new JLabel("Name:",JLabel.RIGHT));
+		JTextField tfName= new JTextField(getTable().getName(),30);
+		grid.add(tfName);
+		grid.add(new JLabel("Desc:",JLabel.RIGHT));
+		JTextField tfDesc= new JTextField(getTable().getName(),30);
+		grid.add(tfDesc);
+		grid.add(new JLabel("Keywords:",JLabel.RIGHT));
+		JTextField tfTags= new JTextField("",30);
+		grid.add(tfTags);
+		if(JOptionPane.showConfirmDialog(this, pane,"Save...",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION)
+			{
+			return;
+			}
+		Transaction txn= null;
+		try {
+			txn=Berkeley.getInstance().getEnvironment().beginTransaction(null,null);
+			SingleMapDatabase<Long, TableRef> db=Berkeley.getInstance().getTableRefDB();
+			Long id = System.currentTimeMillis();
+			while(db.get(txn,id)!=null) { id++;}
+			TableRef tref= new TableRef();
+			tref.setId(id);
+			tref.setName(tfName.getText());
+			tref.setDescription(tfDesc.getText());
+			tref.setCreation(new Date());
+			tref.setRowCount(getTable().getRowCount());
+			Set<String> set= new HashSet<String>();
+			for(String tag: tfTags.getText().split("[ \n\t,;]+"))
+				{
+				if(tag.length()==0) continue;
+				set.add(tag);
+				}
+			tref.setTags(set);
+		
+			
+			db.put(txn,id, tref);
+			
+			txn.commit();
+			}
+		catch (DatabaseException err)
+			{
+			if(txn!=null) try { txn.abort(); } catch(Throwable err2) {}
+			ThrowablePane.show(this, err);
+			}
+		finally
+			{
+			txn=null;
+			}
+		}
+	
 	private class JoinPane
 		extends JPanel
 		{
+		private static final long serialVersionUID = 1L;
 		private ColumnSelector left;
 		private ColumnSelector right;
 		private JComboBox iFrameCombo;
@@ -704,6 +771,7 @@ public class TableFrame
 			bot.add(this.showMissingRight=new JCheckBox("Show Missing Right"));
 			this.iFrameCombo.addActionListener(new AbstractAction()
 				{
+				private static final long serialVersionUID = 1L;
 				@Override
 				public void actionPerformed(ActionEvent e)
 					{
@@ -720,6 +788,7 @@ public class TableFrame
 				});
 			
 			}
+		@SuppressWarnings("unchecked")
 		public TableFrame getOtherFrame()
 			{
 			return ((NamedObject<TableFrame>)iFrameCombo.getSelectedItem()).getObject();
