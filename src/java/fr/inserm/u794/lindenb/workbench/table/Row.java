@@ -55,7 +55,10 @@ implements Iterable<String>,Comparable<Row>
 		{
 		this.tokens=tokens;
 		}
-	
+	public Row(Row cp)
+		{
+		this.tokens=cp.toArray();
+		}
 	public int size()
 		{
 		return tokens.length;

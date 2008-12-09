@@ -36,6 +36,7 @@ public static final TupleBinding<TableRef> BINDING= new TupleBinding<TableRef>()
 		t.rowCount= in.readInt();
 		n= in.readInt();
 		for(int i=0;i< n;++i) t.columns.add(Column.BINDING.entryToObject(in));
+		t.author= in.readString();
 		return t;
 		}
 	@Override
@@ -52,6 +53,7 @@ public static final TupleBinding<TableRef> BINDING= new TupleBinding<TableRef>()
 		
 		out.writeInt(t.columns.size());
 		for(Column s:t.columns) Column.BINDING.objectToEntry(s, out);
+		out.writeString(t.getAuthor());
 		}
 	};
 	
@@ -65,7 +67,7 @@ public static class Model extends GenericTableModel<TableRef>
 	
 	@Override
 	public int getColumnCount() {
-		return 5;
+		return 6;
 		}
 	@Override
 	public Class<?> getColumnClass(int arg0) {
@@ -82,6 +84,7 @@ public static class Model extends GenericTableModel<TableRef>
 			case 2: return "Creation";
 			case 3: return "Tags";
 			case 4: return "Rows";
+			case 5: return "Author";
 			}
 		return null;
 		}
@@ -95,6 +98,7 @@ public static class Model extends GenericTableModel<TableRef>
 			case 2: return object.getCreation();
 			case 3: return object.getTagsAsString();
 			case 4: return String.valueOf(object.getRowCount());
+			case 5: return object.getAuthor();
 			}
 		return null;
 		}
@@ -107,6 +111,8 @@ private Date creation=new Date();
 private Set<String> tags=new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 private int rowCount=0;
 private List<Column> columns= new ArrayList<Column>();
+private String author=System.getProperty("user.name","");
+
 public TableRef()
 	{
 	
@@ -121,6 +127,7 @@ public TableRef(TableRef cp)
 	setTags(cp.getTags());
 	setRowCount(cp.getRowCount());
 	setColumns(cp.getColumns());
+	setAuthor(cp.getAuthor());
 	}
 
 
@@ -189,6 +196,14 @@ public int getRowCount() {
 
 public void setRowCount(int rowCount) {
 	this.rowCount = rowCount;
+	}
+
+public String getAuthor() {
+	return author;
+	}
+
+public void setAuthor(String author) {
+	this.author = author;
 	}
 
 @Override
