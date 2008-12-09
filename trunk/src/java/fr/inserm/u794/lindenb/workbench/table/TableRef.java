@@ -1,7 +1,9 @@
 package fr.inserm.u794.lindenb.workbench.table;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,6 +34,8 @@ public static final TupleBinding<TableRef> BINDING= new TupleBinding<TableRef>()
 		int n= in.readInt();
 		for(int i=0;i< n;++i) t.tags.add(in.readString());
 		t.rowCount= in.readInt();
+		n= in.readInt();
+		for(int i=0;i< n;++i) t.columns.add(Column.BINDING.entryToObject(in));
 		return t;
 		}
 	@Override
@@ -45,6 +49,9 @@ public static final TupleBinding<TableRef> BINDING= new TupleBinding<TableRef>()
 			;
 		for(String s:t.tags) out.writeString(s);
 		out.writeInt(t.getRowCount());
+		
+		out.writeInt(t.columns.size());
+		for(Column s:t.columns) Column.BINDING.objectToEntry(s, out);
 		}
 	};
 	
@@ -99,11 +106,23 @@ private String description="";
 private Date creation=new Date();
 private Set<String> tags=new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 private int rowCount=0;
-
+private List<Column> columns= new ArrayList<Column>();
 public TableRef()
 	{
 	
 	}
+
+public TableRef(TableRef cp)
+	{
+	setId(cp.getId());
+	setName(cp.getName());
+	setDescription(cp.getDescription());
+	setCreation(cp.getCreation());
+	setTags(cp.getTags());
+	setRowCount(cp.getRowCount());
+	setColumns(cp.getColumns());
+	}
+
 
 public long getId() {
 	return id;
@@ -130,6 +149,15 @@ public void setTags(Set<String> tags){
 	this.tags.clear();
 	this.tags.addAll(tags);
 }
+
+public List<Column> getColumns() {
+	return columns;
+	}
+
+public void setColumns(List<Column> columns) {
+	this.columns=new ArrayList<Column>();
+	this.columns.addAll(columns);
+	}
 
 public void setCreation(Date creation) {
 	this.creation = creation;

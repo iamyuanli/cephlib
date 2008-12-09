@@ -1,7 +1,11 @@
 package fr.inserm.u794.lindenb.workbench;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.lindenb.berkeley.SingleMapDatabase;
+import org.lindenb.util.iterator.CloseableIterator;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.LongBinding;
@@ -21,6 +25,7 @@ import fr.inserm.u794.lindenb.workbench.table.TableRef;
 public class Berkeley
 	{
 	private long ID_GENERATOR = System.currentTimeMillis();
+	public static final String DB_STORED_TABLE_NAME="storedTableContent";
 	public static final String DEFAULT_BERKELY_FILE=".inserm-workbench-db";
 	private static File dbHome=new File(System.getProperty("user.home","."),DEFAULT_BERKELY_FILE);
 	private static Berkeley INSTANCE=null;
@@ -108,6 +113,10 @@ public class Berkeley
 	public SingleMapDatabase<Long, TableRef> getTableRefDB() {
 		return tableRefDB;
 		}
+	
+	
+	
+	
 	
 	public SingleMapDatabase<Integer, Row> createTable()
 		throws DatabaseException
