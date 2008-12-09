@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -36,9 +37,12 @@ import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.SortOrder;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
 import javax.swing.event.ListSelectionEvent;
@@ -54,6 +58,7 @@ import org.lindenb.sql.SQLUtilities;
 import org.lindenb.swing.layout.InputLayout;
 import org.lindenb.util.NamedObject;
 
+import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -71,6 +76,8 @@ import fr.inserm.u794.lindenb.workbench.table.ColumnSelector;
 import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
 import fr.inserm.u794.lindenb.workbench.table.RowId;
+import fr.inserm.u794.lindenb.workbench.table.SortKey;
+import fr.inserm.u794.lindenb.workbench.table.SortType;
 import fr.inserm.u794.lindenb.workbench.table.Table;
 import fr.inserm.u794.lindenb.workbench.table.TableModel;
 import fr.inserm.u794.lindenb.workbench.table.TableRef;
@@ -86,10 +93,25 @@ public class TableFrame
 	private static final String ACTION_JOIN="worbench.tableframe.join";
 	private static final String ACTION_JS_EXECUTE="worbench.tableframe.javacript.execute";
 	private static final String ACTION_UNIQ="worbench.tableframe.uniq";
+	private static final String ACTION_SORT="worbench.tableframe.sort";
+	private static final String ACTION_HEAD="worbench.tableframe.head";
+	private static final String ACTION_TAIL="worbench.tableframe.tail";
 	private JTable table;
 	private TableModel tableModel;
 	private Table model;
 	private JTextField informationField;
+	
+	private static class IndexComparator
+		implements Comparator<byte[]>
+		{
+		private IntegerBinding bind= new IntegerBinding();
+		@Override
+		public int compare(byte[] o1, byte[] o2) {
+			int i1=bind.entryToObject(new DatabaseEntry(o1));
+			int i2=bind.entryToObject(new DatabaseEntry(o1));
+			return i1-i2;
+			}
+		}
 	
 	public TableFrame(
 			Workbench owner,
@@ -190,7 +212,7 @@ public class TableFrame
 				}
 			};
 		super.actionMap.put(ACTION_JOIN,action);
-		
+		//
 		action = new AbstractAction("Filter by Javascript...")
 			{
 			private static final long serialVersionUID = 1L;
@@ -201,8 +223,7 @@ public class TableFrame
 				}
 			};
 		super.actionMap.put(ACTION_JS_EXECUTE,action);
-			
-			
+		//
 		action = new AbstractAction("Uniq...")
 			{
 			private static final long serialVersionUID = 1L;
@@ -213,8 +234,39 @@ public class TableFrame
 				}
 			};
 		super.actionMap.put(ACTION_UNIQ,action);
-		
-		
+		//
+		action = new AbstractAction("Sort...")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuSort();
+				}
+			};
+		super.actionMap.put(ACTION_SORT,action);
+		//
+		action = new AbstractAction("Head...")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuHead();
+				}
+			};
+		super.actionMap.put(ACTION_HEAD,action);
+		//
+		action = new AbstractAction("Tail...")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuTail();
+				}
+			};
+		super.actionMap.put(ACTION_TAIL,action);
 		
 		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_EXPORT));
 		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_PERSIST));
@@ -225,6 +277,9 @@ public class TableFrame
 		menu.add(super.actionMap.get(ACTION_JOIN));
 		menu.add(super.actionMap.get(ACTION_JS_EXECUTE));
 		menu.add(super.actionMap.get(ACTION_UNIQ));
+		menu.add(super.actionMap.get(ACTION_SORT));
+		menu.add(super.actionMap.get(ACTION_HEAD));
+		menu.add(super.actionMap.get(ACTION_TAIL));
 		
 		toolbar.add(new JButton(super.actionMap.get(ACTION_EXPORT)));
 		toolbar.add(new JButton(super.actionMap.get(ACTION_JOIN)));
@@ -674,6 +729,171 @@ public class TableFrame
 			
 			}
 		}
+	
+	private int askRowCount()
+		{
+		SpinnerNumberModel countModel= new SpinnerNumberModel(10,0,getTable().getRowCount(),1);
+		JPanel pane= new JPanel(new BorderLayout());
+		pane.add(new JSpinner(countModel),BorderLayout.CENTER);
+		if(JOptionPane.showConfirmDialog(this, pane,"Select the Number of Rows.",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION) return 0;
+		return countModel.getNumber().intValue();
+		}
+	
+	/** called by 'head' or 'tail' */
+	private void createSubTable(String title,int from,int to)
+		{
+		try
+			{
+			Table copy= new Table();
+			copy.setName(title);
+			copy.setColumns(tableModel.getTable().getColumns());
+			copy.setDatabase(Berkeley.getInstance().createTable());
+			
+			
+			int nLine=0;
+			for(int i=from;i< to && i< getTable().getRowCount();++i)
+				{
+				Row row= TableFrame.this.model.getDatabase().get(i);
+				if(row==null) continue;			
+				copy.getDatabase().put(nLine, row);
+				++nLine;
+				}
+			copy.setRowCount(nLine);
+		
+			TableFrame frame= new TableFrame(getWorkbench(),copy);
+			getWorkbench().getDesktop().add(frame);
+			frame.setVisible(true);
+			}
+		catch (DatabaseException err) {
+		ThrowablePane.show(TableFrame.this, err);
+		} 
+	}
+	
+	private void doMenuHead()
+		{
+		int n=askRowCount();
+		if(n==0) return;
+		createSubTable("Head",0,n);
+		}
+	
+	private void doMenuTail()
+		{
+		int n=askRowCount();
+		if(n==0) return;
+		createSubTable("Tail",
+				getTable().getRowCount()-n,
+				getTable().getRowCount()
+				);
+		}
+	
+	private void doMenuSort()
+		{
+		final int KEY_COUNT=5;
+		JComboBox cboxColumn[]=new JComboBox[KEY_COUNT];
+		JComboBox cboxSortType[]=new JComboBox[KEY_COUNT];
+		JComboBox cboxSortOrder[]=new JComboBox[KEY_COUNT];
+		JCheckBox cboxCase[]=new JCheckBox[KEY_COUNT];
+		JPanel pane= new JPanel(new GridLayout(0,5,2,2));
+		for(int i=0;i< KEY_COUNT;++i)
+			{
+			pane.add(new JLabel("Key "+String.valueOf(i+1),JLabel.RIGHT));
+			
+			cboxColumn[i]=new JComboBox(new Vector<Column>(this.getTable().getColumns()));
+			cboxColumn[i].setSelectedIndex(-1);
+			pane.add(cboxColumn[i]);
+			
+			cboxSortType[i]=new JComboBox(SortType.values());
+			cboxSortType[i].setSelectedIndex(0);
+			pane.add(cboxSortType[i]);
+			
+			cboxSortOrder[i]=new JComboBox(new SortOrder[]{SortOrder.ASCENDING,SortOrder.DESCENDING});
+			cboxSortOrder[i].setSelectedIndex(0);
+			pane.add(cboxSortOrder[i]);
+			
+			cboxCase[i]=new JCheckBox("Case Sensible",true);
+			pane.add(cboxCase[i]);
+			}
+		if(JOptionPane.showConfirmDialog(this, pane,"Sort...",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION)
+			{
+			return;
+			}
+		List<SortKey> keys= new ArrayList<SortKey>();
+		for(int i=0;i< KEY_COUNT;++i)
+			{
+			Column c= (Column)cboxColumn[i].getSelectedItem();
+			if(c==null) continue;
+			keys.add(new SortKey(
+				c.getIndex(),
+				SortOrder.class.cast(cboxSortOrder[i].getSelectedItem()),
+				SortType.class.cast(cboxSortType[i].getSelectedItem()),
+				cboxCase[i].isSelected()
+				));
+			}
+		if(keys.isEmpty()) return;
+		
+		Database indexDB=null;
+		Cursor cursor=null;
+		try
+			{
+			Table copy= new Table();
+			copy.setName(title);
+			copy.setColumns(tableModel.getTable().getColumns());
+			copy.setDatabase(Berkeley.getInstance().createTable());
+			
+			DatabaseConfig cfg= new DatabaseConfig();
+			cfg.setAllowCreate(true);
+			cfg.setTemporary(true);
+			cfg.setExclusiveCreate(false);
+			cfg.setBtreeComparator(new Row.COMPARATOR(new SortKey.Multiple(keys)));
+			cfg.setDuplicateComparator(new IndexComparator());
+			indexDB = Berkeley.getInstance().getEnvironment().openDatabase(null, Berkeley.getInstance().createTmpName(), cfg);
+			
+			//build the index
+			DatabaseEntry keyEntry =new DatabaseEntry();
+			DatabaseEntry dataEntry =new DatabaseEntry();
+			IntegerBinding integerBinding= new IntegerBinding();
+			for(int i=0;i< getTable().getRowCount();++i)
+				{
+				Row row= TableFrame.this.model.getDatabase().get(i);
+				if(row==null) continue;			
+				String tokens[]=new String[keys.size()];
+				for(int j=0;j<tokens.length;++j)
+					{
+					tokens[j]= row.at(keys.get(j).getIndex());
+					}
+				row= new Row(tokens);
+				integerBinding.objectToEntry(i, dataEntry);
+				indexDB.put(null, row.toDatabaseEntry(), dataEntry);
+				}
+			
+			int nLine=0;
+			cursor = indexDB.openCursor(null, null);
+			while(cursor.getNext(keyEntry, dataEntry, null)==OperationStatus.SUCCESS)
+				{
+				int i=integerBinding.entryToObject(dataEntry);
+				Row row= getTable().getDatabase().get(i);
+				if(row==null) continue;
+				copy.getDatabase().put(nLine, row);
+				nLine++;
+				}
+			
+			copy.setRowCount(nLine);
+		
+			TableFrame frame= new TableFrame(getWorkbench(),copy);
+			getWorkbench().getDesktop().add(frame);
+			frame.setVisible(true);
+			}
+		catch (DatabaseException err)
+			{
+			ThrowablePane.show(TableFrame.this, err);
+			}
+		finally
+			{
+			BerkeleyUtils.safeClose(cursor);
+			BerkeleyUtils.safeClose(indexDB);
+			}
+		}
+	
 	
 	
 	private void doMenuPersists()
