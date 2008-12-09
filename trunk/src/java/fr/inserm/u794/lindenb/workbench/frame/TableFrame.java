@@ -244,7 +244,7 @@ public class TableFrame
 	private void updateInfoBox()
 		{
 		StringBuilder b= new StringBuilder();
-		if(table.getSelectedRow()!=-1) b.append("Selected Row: "+table.getSelectedRow()+" ");
+		if(table.getSelectedRow()!=-1) b.append("Selected Row: "+(1+table.getSelectedRow())+" ");
 		 b.append(" Rows: "+table.getModel().getRowCount());
 		 b.append(" Columns: "+table.getModel().getColumnCount());
 		this.informationField.setText(b.toString());

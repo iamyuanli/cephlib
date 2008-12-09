@@ -15,6 +15,7 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 
+import fr.inserm.u794.lindenb.workbench.table.ChromPos;
 import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
 import fr.inserm.u794.lindenb.workbench.table.TableRef;
@@ -137,6 +138,26 @@ public class Berkeley
 				);
 		}
 
+	public SingleMapDatabase<ChromPos, Indexes> createPositionIndex()
+	throws DatabaseException
+		{
+		DatabaseConfig dbcfg= new DatabaseConfig();
+		dbcfg.setAllowCreate(true);
+		dbcfg.setBtreeComparator(ChromPos.COMPARATOR.class);
+		dbcfg.setExclusiveCreate(false);
+		dbcfg.setReadOnly(false);
+		dbcfg.setTemporary(true);
+		Database db= getEnvironment().openDatabase(null,
+				"tmpIdx"+(++ID_GENERATOR),
+				dbcfg
+				);
+		
+		return new SingleMapDatabase<ChromPos, Indexes>(db,
+				ChromPos.BINDING,
+				Indexes.BINDING
+				);
+		}
+	
 	
 	public SingleMapDatabase<Row, Indexes> createIndex()
 	throws DatabaseException
