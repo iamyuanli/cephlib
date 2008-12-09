@@ -14,6 +14,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.zip.GZIPInputStream;
 
@@ -40,9 +42,11 @@ import org.lindenb.lang.ThrowablePane;
 import org.lindenb.swing.SwingUtils;
 import org.lindenb.util.Debug;
 import org.lindenb.util.TimeUtils;
+import org.lindenb.util.iterator.CloseableIterator;
 
 
 import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseException;
 
 import fr.inserm.u794.lindenb.workbench.frame.RefFrame;
 import fr.inserm.u794.lindenb.workbench.frame.TableFrame;
@@ -225,7 +229,7 @@ public class Workbench extends JFrame
 		
 		try {
 			Table table= new Table();
-			table.setColumnLabels(loader.getColumns());
+			table.setColumns(loader.getColumns());
 			table.setDatabase(Berkeley.getInstance().createTable());
 			table.setName(loader.getSelectedFile().getName());
 			
@@ -284,7 +288,7 @@ public class Workbench extends JFrame
 		
 		try {
 			Table table= new Table();
-			table.setColumnLabels(loader.getColumns());
+			table.setColumns(loader.getColumns());
 			table.setDatabase(Berkeley.getInstance().createTable());
 			table.setName(loader.getSelectedURL().toString());
 			
@@ -339,6 +343,26 @@ public class Workbench extends JFrame
 			}
 		}
 	
+	public void reloadTableRefModel() 
+		{
+		try
+			{
+			SingleMapDatabase<Long, TableRef> db= Berkeley.getInstance().getTableRefDB();
+			List<TableRef> items= new ArrayList<TableRef>();
+			CloseableIterator<TableRef> r=db.listValues();
+			while(r.hasNext())
+				{
+				items.add(r.next());
+				}
+			r.close();
+			this.tableRefModel.clear();
+			this.tableRefModel.addAll(items);
+			}
+		catch(DatabaseException err)
+			{
+			ThrowablePane.show(this, err);
+			}
+		}
 	
 	public static void main(String[] args) {
 		try {

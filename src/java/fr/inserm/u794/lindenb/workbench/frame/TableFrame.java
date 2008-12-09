@@ -46,6 +46,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
+import org.lindenb.berkeley.BerkeleyUtils;
 import org.lindenb.berkeley.SingleMapDatabase;
 import org.lindenb.io.PreferredDirectory;
 import org.lindenb.lang.ThrowablePane;
@@ -54,6 +55,8 @@ import org.lindenb.swing.layout.InputLayout;
 import org.lindenb.util.NamedObject;
 
 import com.sleepycat.je.Cursor;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.OperationStatus;
@@ -67,6 +70,7 @@ import fr.inserm.u794.lindenb.workbench.table.Column;
 import fr.inserm.u794.lindenb.workbench.table.ColumnSelector;
 import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
+import fr.inserm.u794.lindenb.workbench.table.RowId;
 import fr.inserm.u794.lindenb.workbench.table.Table;
 import fr.inserm.u794.lindenb.workbench.table.TableModel;
 import fr.inserm.u794.lindenb.workbench.table.TableRef;
@@ -336,7 +340,7 @@ public class TableFrame
 			final int NEW_COLUMNS_COUNT=11;
 			Table copy= new Table();
 			copy.setName("SnpInfo");
-			copy.setColumnLabels(columns);
+			copy.setColumns(columns);
 			copy.setDatabase(Berkeley.getInstance().createTable());
 			
 			con=DriverManager.getConnection(sqlSource.getJdbcUri(), sqlSource.getlogin(),sqlSource.getPassword());
@@ -410,7 +414,7 @@ public class TableFrame
 			
 			Table copy= new Table();
 			copy.setName("JavaScript Filter");
-			copy.setColumnLabels(tableModel.getTable().getColumns());
+			copy.setColumns(tableModel.getTable().getColumns());
 			copy.setDatabase(Berkeley.getInstance().createTable());
 			
 			
@@ -494,7 +498,7 @@ public class TableFrame
 				copycols.add(new Column(copycols.size(),"Count"));
 				}
 				
-			copy.setColumnLabels(copycols);
+			copy.setColumns(copycols);
 			copy.setDatabase(Berkeley.getInstance().createTable());
 			
 			int combochoice= comboWay.getSelectedIndex();
@@ -585,7 +589,7 @@ public class TableFrame
 			
 			Table copy= new Table();
 			copy.setName("Join");
-			copy.setColumnLabels(joinedColumns);
+			copy.setColumns(joinedColumns);
 			copy.setDatabase(Berkeley.getInstance().createTable());
 			
 			
@@ -693,15 +697,19 @@ public class TableFrame
 		Transaction txn= null;
 		try {
 			txn=Berkeley.getInstance().getEnvironment().beginTransaction(null,null);
-			SingleMapDatabase<Long, TableRef> db=Berkeley.getInstance().getTableRefDB();
+			SingleMapDatabase<Long, TableRef> dbref =Berkeley.getInstance().getTableRefDB();
 			Long id = System.currentTimeMillis();
-			while(db.get(txn,id)!=null) { id++;}
+			/* find db new id */
+			while(dbref.get(txn,id)!=null) { id++;}
+			
+			/* create new ref */
 			TableRef tref= new TableRef();
 			tref.setId(id);
 			tref.setName(tfName.getText());
 			tref.setDescription(tfDesc.getText());
 			tref.setCreation(new Date());
 			tref.setRowCount(getTable().getRowCount());
+			tref.setColumns(getTable().getColumns());
 			Set<String> set= new HashSet<String>();
 			for(String tag: tfTags.getText().split("[ \n\t,;]+"))
 				{
@@ -709,20 +717,42 @@ public class TableFrame
 				set.add(tag);
 				}
 			tref.setTags(set);
-		
 			
-			db.put(txn,id, tref);
+			/* save rows */
+			DatabaseConfig dbConfig= new DatabaseConfig();
+			dbConfig.setTransactional(true);
+			dbConfig.setAllowCreate(true);
+			dbConfig.setExclusiveCreate(false);
+			dbConfig.setReadOnly(false);
+			Database dbrows= Berkeley.getInstance().getEnvironment().openDatabase(txn,Berkeley.DB_STORED_TABLE_NAME, dbConfig);
+			int nLine=0;
+			for(int i=0;i< getTable().getRowCount();++i)
+				{
+				RowId rid= new RowId(id,i);
+				Row row = this.getTable().getDatabase().get(i);
+				if(dbrows.put(txn, rid.toEntry(), row.toDatabaseEntry())!=OperationStatus.SUCCESS)
+					{
+					throw new DatabaseException("Cannot insert row at "+i+" "+row);
+					}
+				nLine++;
+				}
+			dbrows.close();
+			
+			/** save ref */
+			tref.setRowCount(nLine);
+			dbref.put(txn,id, tref);
 			
 			txn.commit();
 			}
 		catch (DatabaseException err)
 			{
-			if(txn!=null) try { txn.abort(); } catch(Throwable err2) {}
+			BerkeleyUtils.safeAbort(txn);
 			ThrowablePane.show(this, err);
 			}
 		finally
 			{
 			txn=null;
+			getWorkbench().reloadTableRefModel();
 			}
 		}
 	
