@@ -128,7 +128,7 @@ public class Berkeley
 		dbcfg.setReadOnly(false);
 		dbcfg.setTemporary(true);
 		Database db= getEnvironment().openDatabase(null,
-				"tmp"+(++ID_GENERATOR),
+				createTmpName(),
 				dbcfg
 				);
 		
@@ -137,7 +137,12 @@ public class Berkeley
 				Row.BINDING
 				);
 		}
-
+	public String createTmpName()
+		{
+		return "tmpIdx"+(++ID_GENERATOR);
+		}
+	
+	
 	public SingleMapDatabase<ChromPos, Indexes> createPositionIndex()
 	throws DatabaseException
 		{
@@ -148,7 +153,7 @@ public class Berkeley
 		dbcfg.setReadOnly(false);
 		dbcfg.setTemporary(true);
 		Database db= getEnvironment().openDatabase(null,
-				"tmpIdx"+(++ID_GENERATOR),
+				createTmpName(),
 				dbcfg
 				);
 		
@@ -169,7 +174,7 @@ public class Berkeley
 		dbcfg.setReadOnly(false);
 		dbcfg.setTemporary(true);
 		Database db= getEnvironment().openDatabase(null,
-				"tmpIdx"+(++ID_GENERATOR),
+				createTmpName(),
 				dbcfg
 				);
 		
