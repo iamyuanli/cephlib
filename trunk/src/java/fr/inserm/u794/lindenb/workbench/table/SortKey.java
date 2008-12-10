@@ -36,6 +36,15 @@ public class SortKey
 		if(isCasesensible()) src=src.toLowerCase();
 		if(getType()==SortType.NUMERIC)
 			{
+			int dotIndex= src.indexOf(".");
+			if(dotIndex==-1)
+				{
+				src=src+".";
+				dotIndex= src.length()-1;
+				}
+			//append 0 after
+			
+			
 			int nZero= 50-src.length();
 			StringBuilder b= new StringBuilder(nZero+src.length());
 			for(int i=0;i<nZero;++i) b.append('0');
