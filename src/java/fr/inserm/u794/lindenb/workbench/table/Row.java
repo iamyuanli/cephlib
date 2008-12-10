@@ -1,5 +1,6 @@
 package fr.inserm.u794.lindenb.workbench.table;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -14,36 +15,32 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.DatabaseEntry;
 
 public class Row
-implements Iterable<String>,Comparable<Row>
+implements Iterable<String>,Comparable<Row>,Serializable
 	{
-	
-	
+	private static final long serialVersionUID = 1L;
+
+
 	/**
 	 * 
 	 * COMPARATOR
 	 *
 	 */
 	public static class COMPARATOR
-		implements Comparator<byte[]>
+		implements Comparator<byte[]>,Serializable
 		{
-		private Comparator<Row> comparator=null;
-		
-		public COMPARATOR(Comparator<Row> comparator)
-			{
-			this.comparator=comparator;
-			}
+		private static final long serialVersionUID = 1L;
+
+
 		
 		public COMPARATOR()
 			{
-			this(null);
+	
 			}
 		public int compare(byte[] o1, byte[] o2)
 			{
 			Row r1= BINDING.entryToObject(new DatabaseEntry(o1));
 			Row r2= BINDING.entryToObject(new DatabaseEntry(o2));
-			return comparator!=null
-					? comparator.compare(r1, r2)
-					: r1.compareTo(r2);
+			return r1.compareTo(r2);
 			};
 		}
 	
