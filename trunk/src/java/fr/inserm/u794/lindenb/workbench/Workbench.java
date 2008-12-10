@@ -473,7 +473,6 @@ public class Workbench extends JFrame
 				long startB = Cast.Long.cast(pos);
 				
 				ChromPos chrompos= new ChromPos(chromB,startB);
-				System.err.println("Indexing \""+chrompos+"\" \""+chrompos.getChrom()+"\"");
 				Indexes idx= indexes.get(chrompos);
 				if(idx==null) idx= new Indexes();
 				idx.add(indexB);
@@ -519,38 +518,52 @@ public class Workbench extends JFrame
 				Cursor c= indexes.cursor();
 				
 				
-				
+				System.err.println("Looking for "+chromA+" "+startA+" "+endA);
 				while(c.getNext(chromPosEntry, indexesEntry,null)==OperationStatus.SUCCESS)
 					{
 					ChromPos cp= ChromPos.BINDING.entryToObject(chromPosEntry);
-					if(!cp.getChrom().equals(chromA))
+					if(cp.getChrom().compareTo(chromA)<0)
 						{
+						//System.err.println("A:"+cp.getChrom()+"< "+chromA +" continue");
 						continue;
+						}
+					else if(cp.getChrom().compareTo(chromA)>0)
+						{
+						//System.err.println("B:"+cp.getChrom()+"> "+chromA +" break");
+						break;
 						}
 					if(cp.getPosition()> endA)
 						{
 						break;
 						}
-					if(cp.getPosition()< startA)
-						{
-						continue;
-						}
+					
 					Indexes rowIdx= Indexes.BINDING.entryToObject(indexesEntry);
 					for(int indexB: rowIdx)
 						{
 						Row rowB= maker.getTableB().getDatabase().get(indexB);
-						String chromB= rowB.at(maker.selectorB.getColumnForChromosome());
-						if(chromB.trim().length()==0 || !chromA.equalsIgnoreCase(chromB)) continue;
+						String chromB= normalizeChromosome(rowB.at(maker.selectorB.getColumnForChromosome()));
+						if(chromB.trim().length()==0 || !chromA.equalsIgnoreCase(chromB))
+							{
+							continue;
+							}
 						
 						pos= rowB.at(maker.selectorB.getColumnForStart());
 						if(!Cast.Long.isA(pos)) continue;
 						long startB = Cast.Long.cast(pos);
-										
+						if(startB>endA)
+							{
+							continue;
+							}
+						
+						
 						pos= rowB.at(maker.selectorB.getColumnForEnd());
 						if(!Cast.Long.isA(pos)) continue;
 						long endB = Cast.Long.cast(pos);
 						
-						if(endA<startB || endB<startA) continue;
+						if(endB<startA)
+							{
+							continue;
+							}
 						Row joined= new Row(rowA);
 						for(String s:rowB) joined=joined.add(s);
 						t.getDatabase().put(nLine, joined);

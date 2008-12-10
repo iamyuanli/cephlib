@@ -791,9 +791,8 @@ public class TableFrame
 		final int KEY_COUNT=5;
 		JComboBox cboxColumn[]=new JComboBox[KEY_COUNT];
 		JComboBox cboxSortType[]=new JComboBox[KEY_COUNT];
-		JComboBox cboxSortOrder[]=new JComboBox[KEY_COUNT];
 		JCheckBox cboxCase[]=new JCheckBox[KEY_COUNT];
-		JPanel pane= new JPanel(new GridLayout(0,5,2,2));
+		JPanel pane= new JPanel(new GridLayout(0,4,2,2));
 		for(int i=0;i< KEY_COUNT;++i)
 			{
 			pane.add(new JLabel("Key "+String.valueOf(i+1),JLabel.RIGHT));
@@ -805,11 +804,7 @@ public class TableFrame
 			cboxSortType[i]=new JComboBox(SortType.values());
 			cboxSortType[i].setSelectedIndex(0);
 			pane.add(cboxSortType[i]);
-			
-			cboxSortOrder[i]=new JComboBox(new SortOrder[]{SortOrder.ASCENDING,SortOrder.DESCENDING});
-			cboxSortOrder[i].setSelectedIndex(0);
-			pane.add(cboxSortOrder[i]);
-			
+
 			cboxCase[i]=new JCheckBox("Case Sensible",true);
 			pane.add(cboxCase[i]);
 			}
@@ -824,14 +819,13 @@ public class TableFrame
 			if(c==null) continue;
 			keys.add(new SortKey(
 				c.getIndex(),
-				SortOrder.class.cast(cboxSortOrder[i].getSelectedItem()),
 				SortType.class.cast(cboxSortType[i].getSelectedItem()),
 				cboxCase[i].isSelected()
 				));
 			}
 		if(keys.isEmpty()) return;
 		
-		Database indexDB=null;
+		SingleMapDatabase<Row, Indexes> indexDB=null;
 		Cursor cursor=null;
 		try
 			{
@@ -840,18 +834,11 @@ public class TableFrame
 			copy.setColumns(tableModel.getTable().getColumns());
 			copy.setDatabase(Berkeley.getInstance().createTable());
 			
-			DatabaseConfig cfg= new DatabaseConfig();
-			cfg.setAllowCreate(true);
-			cfg.setTemporary(true);
-			cfg.setExclusiveCreate(false);
-			cfg.setBtreeComparator(new Row.COMPARATOR(new SortKey.Multiple(keys)));
-			cfg.setDuplicateComparator(new IndexComparator());
-			indexDB = Berkeley.getInstance().getEnvironment().openDatabase(null, Berkeley.getInstance().createTmpName(), cfg);
 			
-			//build the index
-			DatabaseEntry keyEntry =new DatabaseEntry();
-			DatabaseEntry dataEntry =new DatabaseEntry();
-			IntegerBinding integerBinding= new IntegerBinding();
+			indexDB= Berkeley.getInstance().createIndex();
+			
+			
+			
 			for(int i=0;i< getTable().getRowCount();++i)
 				{
 				Row row= TableFrame.this.model.getDatabase().get(i);
@@ -859,22 +846,29 @@ public class TableFrame
 				String tokens[]=new String[keys.size()];
 				for(int j=0;j<tokens.length;++j)
 					{
-					tokens[j]= row.at(keys.get(j).getIndex());
+					tokens[j]= keys.get(j).createIndexedString(row);
 					}
 				row= new Row(tokens);
-				integerBinding.objectToEntry(i, dataEntry);
-				indexDB.put(null, row.toDatabaseEntry(), dataEntry);
+				Indexes idx= indexDB.get(row);
+				if(idx==null) idx= new Indexes();
+				idx.add(i);
+				indexDB.put(row, idx);
 				}
 			
 			int nLine=0;
-			cursor = indexDB.openCursor(null, null);
+			cursor = indexDB.cursor();
+			DatabaseEntry keyEntry=new DatabaseEntry();
+			DatabaseEntry dataEntry=new DatabaseEntry();
 			while(cursor.getNext(keyEntry, dataEntry, null)==OperationStatus.SUCCESS)
 				{
-				int i=integerBinding.entryToObject(dataEntry);
-				Row row= getTable().getDatabase().get(i);
-				if(row==null) continue;
-				copy.getDatabase().put(nLine, row);
-				nLine++;
+				Indexes idx= Indexes.BINDING.entryToObject(dataEntry);
+				for(int i:idx)
+					{
+					Row row= getTable().getDatabase().get(i);
+					if(row==null) continue;
+					copy.getDatabase().put(nLine, row);
+					nLine++;
+					}
 				}
 			
 			copy.setRowCount(nLine);
@@ -883,14 +877,14 @@ public class TableFrame
 			getWorkbench().getDesktop().add(frame);
 			frame.setVisible(true);
 			}
-		catch (DatabaseException err)
+		catch (Throwable err)
 			{
 			ThrowablePane.show(TableFrame.this, err);
 			}
 		finally
 			{
 			BerkeleyUtils.safeClose(cursor);
-			BerkeleyUtils.safeClose(indexDB);
+			if(indexDB!=null) try { indexDB.close(); }catch(DatabaseException err) {}
 			}
 		}
 	
