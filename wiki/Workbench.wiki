@@ -1,0 +1,39 @@
+#labels Featured,table,spreadsheet,berkeley,berkeleyDB,bioinformatics,tool,java,gui
+#A tool to handle large tables
+
+The *Inserm* *Workbench* is a tool developped at the Center for Polymorphism Studies (CEPH) to help people at handling large tables in a rich graphical environment.
+
+The tool is currently available as a Java webstart application at http://anybody.cephb.fr/perso/lindenb/tinytools/workbench.php
+
+
+==Screenshot==
+http://data.tumblr.com/NngfN9gsDh4plsq2kzs75bZeo1_400.png
+
+== Requirements ==
+
+  * java 1.6
+  * java web start
+
+== Sources ==
+
+the JAVA Sources are available on code.google.com at http://code.google.com/p/cephlib
+
+== Implementation==
+
+*Workbench* use the Java berkeleyDB API ( http://www.oracle.com/technology/documentation/berkeley-db/je/index.html ) to create an index of each row in a table.
+The table are temporary (they are discarded when the program exits) but can be made persistent and stored in user's home.
+
+== Manual ==
+
+On opening, the application will create a folder in `${HOME}/.inserm-workbench-db`. The folder will contain the data handled by the Java berkeleyDB API
+A first internal frame appear and containing the current persistent datases (The table is empty at the first time the application is launched)
+
+
+=== Opening a Table ===
+  * *from a local file*: menu "File" -> 'load Table' -> 'Load Table'. A Dialog 'Select' appears. Select the file you want to upload into the workbench. Adjust the delimiter (this is a regular expression). Tabulation is the default. Click 'OK'. The file is uploaded  as a temporary table into the workbench. GZipped files are OK.
+  * *from a URL*: : menu "File" -> 'load Table' -> 'Load URL'. A Dialog 'Select' appears. Select the URL you want to upload into the workbench (e.g. http://ftp.hapmap.org/genotypes/latest/rs_strand/non-redundant/genotypes_chr1_CEU_r24_nr.b36.txt.gz ). Adjust the delimiter (this is a regular expression). Tabulation is the default. Click 'OK'. The file is uploaded  as a temporary table into the workbench.GZipped files are OK.
+  * *from a Database* (at this time only localhost and UCSC are supported):  menu "File" -> 'load Table' -> 'Load SQL'. A Dialog 'Select' appears. Select the JDBC parameters and enter a mysql query in the top left pane. e.g:
+{{{
+select * from hg18.snp129
+}}}
+Click on 'test' to see the result and then on 'OK'. The result is uploaded  as a temporary table into the workbench.
