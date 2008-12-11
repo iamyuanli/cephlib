@@ -222,4 +222,12 @@ public class RefFrame extends AbstractIFrame
 		{
 		getWorkbench().reloadTableRefModel();
 		}
+	
+	
+	@Override
+	public void doMenuClose() {
+		
+		super.doMenuClose();
+		}
+	
 	}

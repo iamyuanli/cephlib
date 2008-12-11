@@ -30,6 +30,7 @@
  	<pathelement path="${hibernate.em.path}/lib/javassist.jar"/>
  	<pathelement path="/usr/local/package/hibernate-annotations-3.4.0.GA/lib/test/commons-collections.jar"/>
  	<pathelement path="/usr/local/package/hibernate-annotations-3.4.0.GA/lib/test/jta.jar"/>
+	<pathelement path="/usr/local/package/berkeley/je-3.3.69/lib/je-3.3.69.jar"/>
  </path> 
 	
 	
@@ -73,7 +74,7 @@
    <genkey alias="${key.alias}" keystore="${keystore.location}" storepass="${keystore.password}" validity="3650" dname="CN=Pierre, OU=Lindenbaum, O=Ceph, C=FR"/>
 </target>
  
-<target name="all" depends="aschard20081009,graph4ncbi">
+<target name="all" depends="workbench,aschard20081009,graph4ncbi,workbench">
 </target>
 
 	 <!-- =================================================================== -->
@@ -247,5 +248,55 @@
 	 	</java>
 	 	
 	 </target>	
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+<!-- =================================================================== -->
+	<target name="workbench" depends="declare-ant-tasks,generate-keys">
+		 <mkdir dir="build/compile"/>
+		 <mkdir dir="build/compile/images"/>
+		 <makeSplash title="Inserm Workbench" file="build/compile/images/splash.jpeg"/>
+		 <copy todir="build/compile" includeEmptyDirs="false">
+			<fileset dir="src/java"/>
+		 </copy>
+		 <copy todir="build/compile" includeEmptyDirs="false">
+			<fileset dir="${lindenb.src}"/>
+		 </copy>
+		 <compileInfoTask name="Inserm Workbench" package="org.lindenb.util" dir="build/compile"/>
+		 <javac srcdir="build/compile"
+			destdir="build/compile"
+			source="1.6"
+			target="1.6">
+ 		<classpath>
+ 			 <path refid="libraries"/>
+		</classpath>
+			 <include name="**/workbench/Workbench.java"/>
+		 </javac>
+		
+		<delete includeEmptyDirs="true">
+			 <fileset dir="build/compile" includes="**/*.java"/>
+		 </delete>
+		 <jar destfile="build/workbench.jar"
+		      basedir="build/compile">
+			 <manifest>
+				 <attribute name="Main-Class" value="fr.inserm.u794.lindenb.workbench.Workbench"/>
+				 <attribute name="SplashScreen-Image" value="images/splash.jpeg"/>
+			 </manifest>
+		 </jar>
+		<delete dir="build/compile"/>
+
+		<signjar jar="build/workbench.jar"  alias="${key.alias}" keystore="${keystore.location}" storepass="${keystore.password}"/>
+	 	
+	 	<copy file="${jdbc.home}//mysql-connector-java-${jdbc.version}-bin.jar" tofile="build/jdbc.jar"/>
+	 	<signjar jar="build/jdbc.jar"  alias="${key.alias}" keystore="${keystore.location}" storepass="${keystore.password}"/>
+
+		<copy file="/usr/local/package/berkeley/je-3.3.69/lib/je-3.3.69.jar" tofile="build/je.jar"/>
+	 	<signjar jar="build/je.jar"  alias="${key.alias}" keystore="${keystore.location}" storepass="${keystore.password}"/>
+
+	 </target>	
 	
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
+	 <!-- =================================================================== -->
 </project>
