@@ -1137,7 +1137,7 @@ public class TableFrame
 			this.add(bot,BorderLayout.SOUTH);
 			this.caseSensible= new JCheckBox("Case Sensible",true);
 			bot.add(this.caseSensible);
-			bot.add(this.showJoin=new JCheckBox("Show Join"));
+			bot.add(this.showJoin=new JCheckBox("Show Join",true));
 			bot.add(this.showMissingLeft=new JCheckBox("Show Missing Left"));
 			bot.add(this.showMissingRight=new JCheckBox("Show Missing Right"));
 			this.iFrameCombo.addActionListener(new AbstractAction()

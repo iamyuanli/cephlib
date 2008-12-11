@@ -211,7 +211,6 @@ public class Workbench extends JFrame
 				}
 			};
 		this.actionMap.put(ACTION_TABLE_OVERLAP,action);
-		this.actionMap.put(ACTION_TABLE_CONCAT,action);
 		//
 		action=new AbstractAction("About")
 			{
