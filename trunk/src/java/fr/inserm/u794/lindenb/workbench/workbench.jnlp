@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://anybody.cephb.fr/perso/lindenb/tinytools/" href="workbench.jnlp">
+   <information>
+      <title>INSERM WORKBENCH</title>
+      <vendor>http://plindenbaum.blogspot.com/</vendor>
+      <description>INSERM WORKBENCH</description>
+      <description kind="short">INSERM WORKBENCHs</description>
+      <offline-allowed/>
+   </information>
+   <offline-allowed/>
+   <security>
+      <all-permissions/>
+   </security>
+   <resources>
+      <j2se version="1.6+"/>
+      <jar href="workbench.jar"/> 
+      <jar href="je.jar"/>
+      <jar href="jdbc.jar"/> 
+   </resources>
+   <application-desc main-class="fr.inserm.u794.lindenb.workbench.Workbench"/>
+</jnlp>

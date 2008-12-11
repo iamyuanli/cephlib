@@ -27,12 +27,14 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import javax.swing.AbstractAction;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -41,6 +43,7 @@ import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.ListSelectionModel;
 import javax.swing.SortOrder;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.InternalFrameAdapter;
@@ -72,6 +75,7 @@ import fr.inserm.u794.lindenb.workbench.SnpInfo;
 import fr.inserm.u794.lindenb.workbench.Workbench;
 import fr.inserm.u794.lindenb.workbench.sql.SQLSource;
 import fr.inserm.u794.lindenb.workbench.table.Column;
+import fr.inserm.u794.lindenb.workbench.table.ColumnModel;
 import fr.inserm.u794.lindenb.workbench.table.ColumnSelector;
 import fr.inserm.u794.lindenb.workbench.table.Indexes;
 import fr.inserm.u794.lindenb.workbench.table.Row;
@@ -96,23 +100,13 @@ public class TableFrame
 	private static final String ACTION_SORT="worbench.tableframe.sort";
 	private static final String ACTION_HEAD="worbench.tableframe.head";
 	private static final String ACTION_TAIL="worbench.tableframe.tail";
+	private static final String ACTION_CUT="worbench.tableframe.cut";
+	private static final String ACTION_CALCOL="worbench.tableframe.calcCol";
 	private JTable table;
 	private TableModel tableModel;
 	private Table model;
 	private JTextField informationField;
-	
-	private static class IndexComparator
-		implements Comparator<byte[]>
-		{
-		private IntegerBinding bind= new IntegerBinding();
-		@Override
-		public int compare(byte[] o1, byte[] o2) {
-			int i1=bind.entryToObject(new DatabaseEntry(o1));
-			int i2=bind.entryToObject(new DatabaseEntry(o1));
-			return i1-i2;
-			}
-		}
-	
+
 	public TableFrame(
 			Workbench owner,
 			Table model
@@ -267,6 +261,28 @@ public class TableFrame
 				}
 			};
 		super.actionMap.put(ACTION_TAIL,action);
+		//
+		action = new AbstractAction("Cut...")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuCut();
+				}
+			};
+		super.actionMap.put(ACTION_CUT,action);
+		//
+		action = new AbstractAction("New Column...")
+			{
+			private static final long serialVersionUID = 1L;
+	
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doMenuCalculCol();
+				}
+			};
+		super.actionMap.put(ACTION_CALCOL,action);
 		
 		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_EXPORT));
 		getJMenuBar().getMenu(0).add(super.actionMap.get(ACTION_PERSIST));
@@ -280,7 +296,8 @@ public class TableFrame
 		menu.add(super.actionMap.get(ACTION_SORT));
 		menu.add(super.actionMap.get(ACTION_HEAD));
 		menu.add(super.actionMap.get(ACTION_TAIL));
-		
+		menu.add(super.actionMap.get(ACTION_CUT));
+		menu.add(super.actionMap.get(ACTION_CALCOL));
 		toolbar.add(new JButton(super.actionMap.get(ACTION_EXPORT)));
 		toolbar.add(new JButton(super.actionMap.get(ACTION_JOIN)));
 		}
@@ -450,6 +467,65 @@ public class TableFrame
 			}
 		}
 	
+	private void doMenuCalculCol()
+		{
+		String program= JOptionPane.showInputDialog(this, "1");
+		if(program==null) return;
+		try {
+			List<Column> cols= new ArrayList<Column>(getTable().getColumns());
+			cols.add(new Column(cols.size(),program));
+			
+			//get a javascript engine
+			ScriptEngineManager sem = new ScriptEngineManager();
+			ScriptEngine scriptEngine = sem.getEngineByName("js");
+			//ScriptEngineFactory scriptEngineFactory= scriptEngine.getFactory();
+			//String program = scriptEngineFactory.getProgram(statements);
+
+			CompiledScript compiledScript=((Compilable) scriptEngine).compile(program);
+			SimpleBindings bindings= new SimpleBindings();
+		
+			
+			Table copy= new Table();
+			copy.setName("JavaScript Calculus");
+			copy.setColumns(cols);
+			copy.setDatabase(Berkeley.getInstance().createTable());
+			
+			
+			int nLine=0;
+			for(int i=0;i< getTable().getRowCount();++i)
+				{
+				Row row= getTable().getDatabase().get(i);
+				if(row==null) continue;
+				
+				bindings.put("row", row.toArray());
+				bindings.put("rowIndex", i);
+				//invoke the script with the current binding and get the result
+				Object o= compiledScript.eval(bindings);
+				
+				row= row.add(String.valueOf(o));
+				
+				copy.getDatabase().put(nLine, row);
+				++nLine;
+				}
+			copy.setRowCount(nLine);
+		
+			
+			TableFrame frame= new TableFrame(getWorkbench(),copy);
+			getWorkbench().getDesktop().add(frame);
+			frame.setVisible(true);
+		} catch (DatabaseException err) {
+			ThrowablePane.show(TableFrame.this, err);
+			} 
+		catch(ScriptException err)
+			{
+			ThrowablePane.show(TableFrame.this, err);
+			}
+		finally
+			{
+			}
+		
+		
+		}
 	
 	private void doMenuJavaScriptFilter()
 		{
@@ -786,6 +862,57 @@ public class TableFrame
 				);
 		}
 	
+	private void doMenuCut()
+		{
+		ColumnModel lm= new ColumnModel();
+		lm.addAll(getTable().getColumns());
+		JTable t= new JTable(lm);
+		t.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+		t.selectAll();
+		JPanel pane= new JPanel(new BorderLayout());
+		pane.add(new JScrollPane(t),BorderLayout.CENTER);
+		if(JOptionPane.showConfirmDialog(this, pane,"Select the Columns to keep",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION) return ;
+		int selectedCols[]=t.getSelectedRows();
+	    if(selectedCols==null || selectedCols.length==0) return;
+		
+	    try {
+	    	List<Column> cols= new ArrayList<Column>();
+	    	for(int i=0;i<selectedCols.length;++i)
+	    		{
+	    		cols.add(new Column(i,lm.elementAt(selectedCols[i]).getLabel()));
+	    		}
+	    	Table copy= new Table();
+			copy.setName("Cut");
+			copy.setColumns(cols);
+			copy.setDatabase(Berkeley.getInstance().createTable());
+			
+			
+			int nLine=0;
+			for(int i=0; i< getTable().getRowCount();++i)
+				{
+				Row row= TableFrame.this.model.getDatabase().get(i);
+				if(row==null) continue;	
+				
+				Row r= new Row(new String[0]);
+				for(int j:selectedCols)
+					{
+					r=r.add(row.at(j));
+					}
+				copy.getDatabase().put(nLine, r);
+				++nLine;
+				}
+			copy.setRowCount(nLine);
+		
+			TableFrame frame= new TableFrame(getWorkbench(),copy);
+			getWorkbench().getDesktop().add(frame);
+			frame.setVisible(true);
+			} 
+	    catch (Exception e)
+	    	{
+			ThrowablePane.show(this, e);
+			}
+		}
+	
 	private void doMenuSort()
 		{
 		final int KEY_COUNT=5;
@@ -801,7 +928,7 @@ public class TableFrame
 			cboxColumn[i].setSelectedIndex(-1);
 			pane.add(cboxColumn[i]);
 			
-			cboxSortType[i]=new JComboBox(SortType.values());
+			cboxSortType[i]=new JComboBox(new SortType[]{SortType.LITERAL});
 			cboxSortType[i].setSelectedIndex(0);
 			pane.add(cboxSortType[i]);
 

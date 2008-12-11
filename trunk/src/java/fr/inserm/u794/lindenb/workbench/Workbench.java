@@ -26,7 +26,6 @@ import java.util.zip.GZIPInputStream;
 
 
 import javax.swing.AbstractAction;
-import javax.swing.AbstractListModel;
 import javax.swing.ActionMap;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
@@ -55,11 +54,13 @@ import javax.swing.border.EmptyBorder;
 import org.lindenb.berkeley.SingleMapDatabase;
 import org.lindenb.io.IOUtils;
 import org.lindenb.lang.ThrowablePane;
+import org.lindenb.me.Me;
 import org.lindenb.sql.SQLUtilities;
 import org.lindenb.swing.SimpleDialog;
 import org.lindenb.swing.SwingUtils;
 import org.lindenb.swing.layout.InputLayout;
 import org.lindenb.util.Cast;
+import org.lindenb.util.Compilation;
 import org.lindenb.util.Debug;
 import org.lindenb.util.NamedObject;
 import org.lindenb.util.TimeUtils;
@@ -72,6 +73,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.OperationStatus;
 
+import fr.inserm.u794.lindenb.workbench.frame.AbstractIFrame;
 import fr.inserm.u794.lindenb.workbench.frame.RefFrame;
 import fr.inserm.u794.lindenb.workbench.frame.TableFrame;
 import fr.inserm.u794.lindenb.workbench.sql.SQLSource;
@@ -88,7 +90,7 @@ import fr.inserm.u794.lindenb.workbench.table.TableRef;
  */
 public class Workbench extends JFrame
 	{
-
+	private static final String ACTION_ABOUT= "action.about";
 	private static final String ACTION_LOAD_TABLE= "action.load.table";
 	private static final String ACTION_LOAD_URL= "action.load.url";
 	private static final String ACTION_LOAD_SQL= "action.load.sql";
@@ -107,7 +109,7 @@ public class Workbench extends JFrame
 	
 	public Workbench()
 		{
-		super("File Manager");
+		super("Inserm Workbench");
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		
 		try
@@ -209,14 +211,32 @@ public class Workbench extends JFrame
 				}
 			};
 		this.actionMap.put(ACTION_TABLE_OVERLAP,action);
-		
+		this.actionMap.put(ACTION_TABLE_CONCAT,action);
+		//
+		action=new AbstractAction("About")
+			{
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane.showMessageDialog(Workbench.this,
+						"<html><body><div align='center'>"+
+						"<h1>Inserm Workbench</h1>"+
+						"<h3>"+Compilation.getLabel()+"</h3>"+
+						"<h4>Pierre Lindenbaum PhD :"+Me.WWW+" "+Me.MAIL+"</h4>"+
+						"</body></html>"
+						);
+				}
+			};
+		this.actionMap.put(ACTION_ABOUT,action);
 		
 		/* MENUS */
 		JMenuBar bar= new JMenuBar();
 		setJMenuBar(bar);
 		JMenu menu= new JMenu("File");
 		bar.add(menu);
+		menu.add(this.actionMap.get(ACTION_ABOUT));
 		JMenu sub= new JMenu("Load Table");
+		
 		menu.add(sub);
 		sub.add(this.actionMap.get(ACTION_LOAD_TABLE));
 		sub.add(this.actionMap.get(ACTION_LOAD_URL));
@@ -266,6 +286,11 @@ public class Workbench extends JFrame
 		
 		for(JInternalFrame ifr:getDesktop().getAllFrames())
 			{
+			if(ifr instanceof AbstractIFrame)
+				{
+				AbstractIFrame f= (AbstractIFrame)ifr;
+				f.doMenuClose();
+				}
 			ifr.setVisible(false);
 			}
 		//save preferences
@@ -280,7 +305,14 @@ public class Workbench extends JFrame
 			
 			}
 		
-		
+		try
+		 	{
+			Berkeley.getInstance().close();
+		 	}
+		catch(Exception err)
+			{
+			System.err.println(err.getMessage());
+			}
 		}
 	
 	public JDesktopPane getDesktop() {
