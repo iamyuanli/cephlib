@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Node extension for KNIME Workbench
+Bundle-SymbolicName: org.lindenb.knime.plugins.ncbi.esearch; singleton:=true
+Bundle-Version: 1.0.0
+Bundle-ClassPath: knime4bio.jar,lib/mysql-connector-java-5.1.6-bin.jar,lib/je-3.3.75.jar
+Bundle-Activator: org.lindenb.knime.plugins.ncbi.esearch.ESearchNodePlugin
+Bundle-Vendor: Pierre Lindenbaum
+Bundle-Localization: plugin
+Require-Bundle: org.eclipse.core.runtime,
+ org.knime.workbench.core,
+ org.knime.workbench.repository,
+ org.knime.base
+Eclipse-LazyStart: true
+Export-Package: org.lindenb.knime.plugins.ncbi.esearch
+
