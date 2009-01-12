@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+
+<!--    
+   <extension
+         point="org.knime.workbench.repository.categories">
+	<category
+            description="Biology"
+            icon="icons/default.png"
+            level-id="path.knime.bio"
+            name="Biology"
+            path="/bio"/>
+
+      <category
+            description="NCBI"
+            icon="icons/default.png"
+            level-id="path.knime.bio.ncbi"
+            name="NCBI"
+            path="/bio/ncbi"/>
+	<category
+            description="UCSC"
+            icon="icons/default.png"
+            level-id="path.knime.bio.ucsc"
+            name="UCSC"
+            path="/bio/ucsc"/>
+   </extension>
+   -->
+   
+   <extension
+         point="org.knime.workbench.repository.nodes">
+      <node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.ncbi.esearch.ESearchNodeFactory"
+            id="org.lindenb.knime.plugins.ncbi.esearch.ESearchNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.ucsc.snpbyname.SNPByNameNodeFactory"
+            id="org.lindenb.knime.plugins.ucsc.snpbyname.SNPByNameNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.preproc.js.filter.JSFilterNodeFactory"
+            id="org.lindenb.knime.plugins.js.filter.preproc.js.JSFilterNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.preproc.js.append.JSAppendNodeFactory"
+            id="org.lindenb.knime.plugins.js.filter.preproc.js.append.JSAppendNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.linkage.LinkageNodeFactory"
+            id="org.lindenb.knime.plugins.linkage.LinkageNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.ucsc.hapmapbyname.HapmapByNameNodeFactory"
+            id="org.lindenb.knime.plugins.ucsc.hapmapbyname.HapmapByNameNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.ucsc.genebyposition.GeneByPositionNodeFactory"
+            id="org.lindenb.knime.plugins.ucsc.genebyposition.GeneByPositionNodeFactory"/>
+
+	<node
+            category-path="/"
+            factory-class="org.lindenb.knime.plugins.ncbi.omim.OmimNodeFactory"
+            id="org.lindenb.knime.plugins.ncbi.omim.OmimNodeFactory"/>
+
+   </extension>
+   
+</plugin>

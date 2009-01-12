@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="knime" default="all">
+ <property environment="env"/><!-- prefix for environnement properties -->
+ <property name="rootdir" value="../.."/>
+ <property name="builddir" value="${rootdir}/build"/>
+ <property name="compiledir" value="${builddir}/compile"/>
+ <property environment="env"/>
+ <property name="home.dir" value="${env.HOME}"/>
+ <property file="${home.dir}/.ant-global.properties"/>
+ <property name="eclipse.root" value="${home.dir}/bin/eclipse"/>
+ <property name="eclipse.plugins" value="${eclipse.root}/plugins"/>
+
+
+<path id="libraries">
+	<pathelement path="${eclipse.plugins}/org.eclipse.core.runtime_3.3.100.v20070530.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.osgi_3.3.2.R33x_v20080105.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.equinox.common_3.3.0.v20070426.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.core.jobs_3.3.1.R33x_v20070709.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.core.runtime.compatibility.registry_3.2.100.v20070316/runtime_registry_compatibility.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.equinox.registry_3.3.1.R33x_v20070802.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.equinox.preferences_3.2.101.R33x_v20080117.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.core.contenttype_3.2.100.v20070319.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.equinox.app_1.0.1.R33x_v20070828.jar"/>
+	<pathelement path="${eclipse.plugins}/org.knime.workbench.core_2.0.0.0019511/workbench-core.jar"/>
+	<pathelement path="${eclipse.plugins}/org.knime.core_2.0.0.0019511/knime-core.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.platform_3.3.3.r33x_r20080129/platform.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.ui_3.3.1.M20071128-0800.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.swt_3.3.2.v3349d.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.swt.gtk.linux.x86_3.3.2.v3349.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.jface_3.3.2.M20080207-0800.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.core.commands_3.3.0.I20070605-0010.jar"/>
+	<pathelement path="${eclipse.plugins}/org.eclipse.ui.workbench_3.3.2.M20080207-0800.jar"/>
+	<pathelement path="${eclipse.plugins}/org.knime.workbench.repository_2.0.0.0019511/workbench-repository.jar"/>
+	<pathelement path="${eclipse.plugins}/org.knime.base_2.0.0.0019511/knime-base.jar"/>
+
+	<pathelement path="/usr/local/package/je-3.3.75/lib/je-3.3.75.jar"/>
+</path>
+
+
+<target name="all" depends="plugins">
+</target>
+
+<target name="plugins" depends="plugins.package">
+</target>
+
+<target name="plugins.package" depends="plugins.compile">
+	<tstamp/>
+	
+	<zip destfile="${eclipse.plugins}/fr.lindenb.knime.plugins_${DSTAMP}${TSTAMP}.jar">
+		
+		<zipfileset dir="src/META-INF" prefix="META-INF/"/>
+		<zipfileset file="src/java/plugin.properties"/>
+		<zipfileset file="src/java/plugin.xml"/>
+		<zipfileset file="/usr/local/package/je-3.3.75/lib/je-3.3.75.jar" prefix="lib/"/>
+		<zipfileset file="${jdbc.dir}/mysql-connector-java-${jdbc.version}-bin.jar" prefix="lib/"/>
+		<zipfileset file="${builddir}/knime4bio.jar"/>
+	</zip> 
+</target>
+
+<target name="plugins.compile">
+	<delete dir="${compiledir}"/>
+	<mkdir dir="${compiledir}"/>
+	
+	<copy todir="${compiledir}" includeEmptyDirs="false">
+		<fileset dir="src/java"/>
+	</copy>
+
+	
+
+	<javac
+	                destdir="${compiledir}"
+			optimize="off"
+			debug="true"
+	                source="1.6"
+	                target="1.6">
+			<src path="${compiledir}"/>
+			<src path="${rootdir}/src/java"/>
+			<include name="org/lindenb/knime/plugins/**/*.java"/>
+			<classpath>
+				 <path refid="libraries"/>
+		        </classpath>
+	</javac>
+	<jar destfile="${builddir}/knime4bio.jar">
+		<fileset dir="${compiledir}"/>
+	</jar>
+	<delete dir="${compiledir}"/>
+</target>
+
+
+
+</project>
