@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="dochandler" default="all">
+ <property environment="env"/><!-- prefix for environnement properties -->
+ <property name="derby.lib" value="${env.JAVA_HOME}/db/lib"/>
+ <property name="lindenb.src" value="${env.HOME}/src/lindenb/src/java"/>
+ <property name="velocity.home" value="/usr/local/package/velocity-1.5"/>
+ <property name="velocity.lib" value="${velocity.home}"/>
+ <property name="jdbc.version" value="5.1.6"/>
+ <property name="jdbc.home" value="/usr/local/package/mysql-connector-java-${jdbc.version}"/>
+ <property name="hibernate.em.path" value="/usr/local/package/hibernate-entitymanager-3.4.0.GA"/>	
+	
+
+ <path id="libraries">
+	 <pathelement path="${velocity.lib}/velocity-1.5.jar"/>
+	 <pathelement path="${velocity.lib}/velocity-dep-1.5.jar"/>
+ 	 <pathelement path="${jdbc.home}//mysql-connector-java-${jdbc.version}-bin.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/hibernate-entitymanager.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/ejb3-persistence.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/hibernate-core.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/dom4j.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/slf4j-api.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/hibernate-annotations.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/hibernate-commons-annotations.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/test/slf4j-log4j12.jar"/>
+ 	 <pathelement path="${hibernate.em.path}/lib/test/antlr.jar"/>
+ 	<pathelement path="${hibernate.em.path}/lib/test/log4j.jar"/>
+ 	<pathelement path="${hibernate.em.path}/lib/javassist.jar"/>
+ 	<pathelement path="/usr/local/package/hibernate-annotations-3.4.0.GA/lib/test/commons-collections.jar"/>
+ 	<pathelement path="/usr/local/package/hibernate-annotations-3.4.0.GA/lib/test/jta.jar"/>
+	<pathelement path="/usr/local/package/berkeley/je-3.3.69/lib/je-3.3.69.jar"/>
+ </path> 
+	
+
+<target name="all" depends="dochandler">
+</target>
+
+<target name="dochandler">
+	 <mkdir dir="build/compile"/>
+
+	 <copy todir="build/compile" includeEmptyDirs="false">
+		<fileset dir="src/java"/>
+	 </copy>
+	 <copy todir="build/compile" includeEmptyDirs="false">
+		<fileset dir="${lindenb.src}"/>
+	 </copy>
+
+	 <javac srcdir="build/compile"
+		destdir="build/compile"
+		source="1.6"
+		target="1.6"
+	 	optimize="false"
+	 	debug="true"
+	 	classpathref="libraries"
+	 	>
+	 	 <include name="**/entities/*.java"/>
+		 <include name="**/DocumentHandler.java"/>
+	 </javac>
+
+	
+	<delete includeEmptyDirs="true">
+		 <fileset dir="build/compile" includes="**/*.java"/>
+	 </delete>
+	 <jar destfile="build/test01.jar"
+	      basedir="build/compile"
+	 	  
+	 	  >
+	 </jar>
+	<delete dir="build/compile"/>
+
+
+ 	<java classname="fr.cephb.lindenb.dochandler.gui.DocumentHandler" fork="true" >
+ 		<classpath>
+ 			<pathelement location="build/test01.jar"/>
+ 			<path  refid="libraries"/>
+ 		</classpath>
+ 	</java>
+ 	
+ </target>	
+
+</project>
