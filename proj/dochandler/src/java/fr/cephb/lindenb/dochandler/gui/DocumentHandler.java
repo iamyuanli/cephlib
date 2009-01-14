@@ -72,6 +72,11 @@ import fr.cephb.lindenb.dochandler.entities.OntClass;
 import fr.cephb.lindenb.dochandler.entities.Ontology;
 import fr.cephb.lindenb.dochandler.entities.User;
 
+/**
+ * 
+ * OntologyPane
+ *
+ */
 class OntologyPane
 	extends JPanel
 	{
@@ -215,7 +220,11 @@ class OntologyPane
 	
 	}
 
-
+/**
+ * 
+ * DocumentHandler
+ *
+ */
 public class DocumentHandler extends JFrame
 	{
 	private static final long serialVersionUID = 1L;
@@ -233,8 +242,12 @@ public class DocumentHandler extends JFrame
 	private ActionMap actionMap=new ActionMap();
 	private PropertyChangeSupport pptyChangeSupport= new PropertyChangeSupport(this);
 	
+	
+	/**
+	 * DocumentTableModel
+	 */
 	private class DocumentTableModel
-	extends GenericTableModel<Document>
+		extends GenericTableModel<Document>
 		{
 		private static final long serialVersionUID = 1L;
 		@Override
@@ -278,7 +291,11 @@ public class DocumentHandler extends JFrame
 			}
 		}
 	
-	
+	/**
+	 * 
+	 * MyInternalFrame
+	 *
+	 */
 	private class MyInternalFrame
 	extends JInternalFrame
 		{
@@ -290,6 +307,11 @@ public class DocumentHandler extends JFrame
 			}
 		}
 	
+	/**
+	 * 
+	 * DocumentListFrame
+	 *
+	 */
 	private class DocumentListFrame
 	extends MyInternalFrame
 		{
@@ -336,6 +358,7 @@ public class DocumentHandler extends JFrame
 			frame.setVisible(true);
 			}
 		
+		@SuppressWarnings("unchecked")
 		void reloadModel()
 			{
 			EntityManager mgr=EntityMgrSingleton.getEntityManager();
@@ -346,7 +369,11 @@ public class DocumentHandler extends JFrame
 			}
 		}
 	
-	
+	/**
+	 * 
+	 * DocumentFrame
+	 *
+	 */
 	private class DocumentFrame
 	extends MyInternalFrame
 		{
@@ -401,6 +428,11 @@ public class DocumentHandler extends JFrame
 	
 		}
 	
+	/**
+	 * 
+	 * DocumentHandler
+	 * 
+	 */
 	private DocumentHandler()
 		{
 		super("Document Handler");
