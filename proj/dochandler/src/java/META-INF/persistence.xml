@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_version=">
+	<persistence-unit name="docsPU"  transaction-type="RESOURCE_LOCAL">
+		<class>fr.cephb.lindenb.dochandler.entities.Cell</class>
+		<class>fr.cephb.lindenb.dochandler.entities.Document</class>
+		<class>fr.cephb.lindenb.dochandler.entities.Ontology</class>
+		<class>fr.cephb.lindenb.dochandler.entities.OntClass</class>
+		<class>fr.cephb.lindenb.dochandler.entities.User</class>
+		<properties>
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5Dialect" />
+			<property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver" />
+			<property name="hibernate.connection.url" value="jdbc:mysql://localhost/test" />
+			<property name="hibernate.connection.username" value="root" />
+			<property name="hibernate.connection.password" value="" />
+			<property name="hibernate.hibernate.connection.autocommit" value="false"/>
+
+			<!--   <property name="hibernate.show_sql" value="true" />
+			<property name="hibernate.format_sql" value="true" />
+			<property name="hibernate.use_sql_comments" value="true" /> -->
+			<property name="hibernate.cache.provider_class" value="org.hibernate.cache.HashtableCacheProvider" />
+		</properties>
+	</persistence-unit>
+</persistence>
