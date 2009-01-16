@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EntityManager;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
@@ -16,8 +15,6 @@ import javax.persistence.Table;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-
-import org.lindenb.util.Debug;
 
 
 
@@ -126,26 +123,6 @@ public class Ontology
 			}
 		}
 	
-	public static void main(String[] args)
-		{
-		try {
-			Debug.setDebugging(true);
-			Debug.debug("Start");
-			EntityManager mgr= EntityMgrSingleton.getEntityManager();
-			Debug.debug("Find");
-			Ontology o=mgr.find(Ontology.class, 1);
-			if(o==null) return;
-			Debug.debug(o.getName());
-			Debug.debug(o.getRoot());
-			for(OntClass c: o.getRoot().getChildren())
-				{
-				Debug.debug(c.getName());
-				}
-			} catch (Exception e) {
-			
-			e.printStackTrace();
-		}
-		
-		}
+
 
 }

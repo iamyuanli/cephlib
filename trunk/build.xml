@@ -42,6 +42,7 @@
  	<javac destdir="build/ant">
 	  <src path="src/java"/>
  	  <src path="${lindenb.src}"/>
+
 	  <include name="**/UCSCPojoTask.java"/>
  		<classpath>
  			 <path refid="libraries"/>

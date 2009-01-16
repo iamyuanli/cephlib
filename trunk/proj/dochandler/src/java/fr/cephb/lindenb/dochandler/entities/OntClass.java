@@ -1,7 +1,9 @@
 package fr.cephb.lindenb.dochandler.entities;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -33,7 +35,9 @@ public class OntClass
 	/** parent */
 	private OntClass parent;
 	/** children */
-	private List<OntClass> children;
+	private List<OntClass> children= new ArrayList<OntClass>(1);
+	/** uri */
+	private String conceptURI=null;
 	
 	public OntClass()
 		{
@@ -145,6 +149,17 @@ public class OntClass
 		return true;
 	}
 
+	@Column(name="conceptURI",nullable=true,length=255)
+	@Basic(fetch=FetchType.LAZY)
+	public String getConceptURI() {
+		return conceptURI;
+		}
+	
+	
+	public void setConceptURI(String conceptURI) {
+		this.conceptURI = conceptURI;
+	}	
+	
 	@Override
 	public String toString() {
 		return getQName();

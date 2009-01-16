@@ -45,6 +45,8 @@ public class Document
 	private int rowCount=-1;
 	/** columns specs */
 	private List<ColumnSpec> columns=new ArrayList<ColumnSpec>(1);
+	/** columns specs */
+	private List<DocumentMetaData> metadata=new ArrayList<DocumentMetaData>(1);
 	/** ontology class */
 	private Set<OntClass> ontClasses= new HashSet<OntClass>(1);
 	/** name */
@@ -94,6 +96,18 @@ public class Document
 		{
 		return this.columns;
 		}
+	public void setColumnSpecs(List<ColumnSpec> columns) {
+		this.columns = columns;
+		}
+	
+	@OneToMany(fetch=FetchType.LAZY,mappedBy="document",targetEntity=DocumentMetaData.class)
+	public List<DocumentMetaData> getMetadata()
+		{
+		return this.metadata;
+		}
+	public void setMetadata(List<DocumentMetaData> metadata) {
+		this.metadata = metadata;
+		}
 	
 	public String getFilename() {
 		return filename;
@@ -112,9 +126,7 @@ public class Document
 		this.description = description;
 		}
 	
-	public void setColumnSpecs(List<ColumnSpec> columns) {
-		this.columns = columns;
-		}
+	
 	
 	@ManyToMany(fetch=FetchType.LAZY)
 	@JoinTable(name="document2class",
@@ -130,6 +142,8 @@ public class Document
 	public void setOntClasses(Set<OntClass> ontClasses) {
 		this.ontClasses = ontClasses;
 		}
+	
+	
 	
 	
 	public ColumnSpec getColumnSpec(int i)
