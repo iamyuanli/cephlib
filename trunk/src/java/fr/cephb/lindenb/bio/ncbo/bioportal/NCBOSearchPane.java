@@ -189,7 +189,7 @@ extends JPanel
 					);
 				in.close();
 				
-				System.err.println("[["+strw+"]]"+beanInfo.getClass());
+				
 				
 				if(beanInfoThread!=this) return;
 				SwingUtilities.invokeLater(new RunnableObject<String>(strw.toString())
