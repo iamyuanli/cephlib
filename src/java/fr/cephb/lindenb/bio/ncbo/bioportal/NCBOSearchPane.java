@@ -4,6 +4,10 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -15,14 +19,23 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
+import org.lindenb.lang.ResourceUtils;
+import org.lindenb.lang.RunnableObject;
 import org.lindenb.swing.SwingUtils;
 import org.lindenb.swing.table.GenericTableModel;
 
@@ -92,8 +105,9 @@ extends JPanel
 	private SpinnerNumberModel pageCount;
 	private JTextField tfIndo;
 	private JProgressBar progressBar;
-	private JTextArea beanInfo;
+	private JTextPane beanInfo;
 	private BeanInfoRunner beanInfoThread=null;
+
 	
 	private class Runner
 	extends Thread
@@ -150,35 +164,42 @@ extends JPanel
 		@Override
 		public void run()
 			{
-			NCBOConcept engine= new NCBOConcept();
 			try
 				{
-				NCBOClassBean classBean=engine.search(
-						term.getOntologyVersionId(),
-						term.getConceptIdShort()
-						);
-				if(classBean==null || beanInfoThread!=this) return;
-				StringBuilder b= new StringBuilder("Id: ");
-				b.append(classBean.getId()).append("\n");
-				b.append("Label: ").append(classBean.getLabel()).append("\n");
-				b.append("Description: ").append(classBean.getDescription()).append("\n");
-				if(classBean.getSuperClass()!=null)
-					{
-					b.append("\nSuperClass:");
-					b.append("\n\tid: "+classBean.getSuperClass().getId());
-					b.append("\n\tlabel: "+classBean.getSuperClass().getLabel());
-					}
+				if(this.term==null || beanInfoThread!=this) return;
 				
-				if(!classBean.getSubClasses().isEmpty())
-					{
-					b.append("\nSubclasses:");
-					for(NCBOConceptBean sub: classBean.getSubClasses())
+				
+				StringBuilder builder= new StringBuilder(
+						NCBO.BIOPORTAL_URL);
+					builder.append("/concepts/");
+					builder.append(term.getOntologyVersionId());
+					builder.append("/");
+					builder.append(URLEncoder.encode(term.getConceptIdShort(),"UTF-8"));
+				URL url= new URL(builder.toString());
+				InputStream in= url.openStream();
+				TransformerFactory f= TransformerFactory.newInstance();
+				StreamSource stylesheet=new StreamSource(ResourceUtils.getResourceAsStream(NCBOSearchPane.class, "bioportal2html.xsl"));
+				Transformer transformer= f.newTransformer(stylesheet);
+				
+				StringWriter strw= new StringWriter();
+				StreamResult result= new StreamResult(strw);
+				transformer.transform(
+					new StreamSource(in)
+					, result
+					);
+				in.close();
+				
+				System.err.println("[["+strw+"]]"+beanInfo.getClass());
+				
+				if(beanInfoThread!=this) return;
+				SwingUtilities.invokeLater(new RunnableObject<String>(strw.toString())
 						{
-						b.append("\n\tid: "+sub.getId());
-						b.append("\n\tlabel: "+sub.getLabel());
-						}
-					}
-				beanInfo.setText(b.toString());
+						@Override
+						public void run() {
+							beanInfo.setText(getObject().toString().trim());
+							beanInfo.setCaretPosition(0);
+							}
+						});
 				}
 			catch(Throwable err)
 				{
@@ -197,6 +218,8 @@ extends JPanel
 	public NCBOSearchPane()
 		{
 		super(new BorderLayout());
+
+		
 		setBorder(new EmptyBorder(5,5,5,5));
 		JPanel pane= new JPanel(new FlowLayout(FlowLayout.LEADING));
 		add(pane,BorderLayout.NORTH);
@@ -220,13 +243,14 @@ extends JPanel
 		pane.add(new JSpinner(this.pageIndex=new SpinnerNumberModel(1,1,100,1)));
 		pane.add(new JLabel("Count:",JLabel.RIGHT));
 		pane.add(new JSpinner(this.pageCount=new SpinnerNumberModel(100,1,1000,1)));
-		pane= new JPanel(new BorderLayout());
 		
+		
+		JPanel left= new JPanel(new BorderLayout());
 		this.tableModel=new TermTableModel();
 		this.table= new JTable(this.tableModel);
 		this.table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		pane.add(new JScrollPane(table),BorderLayout.CENTER);
-		this.add(pane,BorderLayout.CENTER);
+		left.add(new JScrollPane(table),BorderLayout.CENTER);
+		
 		
 		pane= new JPanel(new FlowLayout(FlowLayout.LEADING));
 		this.add(pane,BorderLayout.SOUTH);
@@ -235,13 +259,15 @@ extends JPanel
 		pane.add(this.progressBar= new JProgressBar());
 		this.progressBar.setPreferredSize(new Dimension(100,20));
 		
-		pane= new JPanel(new BorderLayout());
-		
-		this.add(pane,BorderLayout.EAST);
-		pane.setPreferredSize(new Dimension(200,100));
-		JScrollPane scroll=new JScrollPane(this.beanInfo= new JTextArea());
-		pane.add(scroll, BorderLayout.CENTER);
+		JPanel right= new JPanel(new BorderLayout());
+		JScrollPane scroll=new JScrollPane(this.beanInfo= new JTextPane());
+		right.add(scroll, BorderLayout.CENTER);
 		this.beanInfo.setEditable(false);
+		this.beanInfo.setContentType("text/html");
+		this.beanInfo.setEditorKit(new HTMLEditorKit());
+		right.setPreferredSize(new Dimension(200,200));
+		
+		this.add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,left,right));
 		
 		this.table.getSelectionModel().addListSelectionListener(new ListSelectionListener()
 			{
