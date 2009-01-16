@@ -2,6 +2,7 @@ package fr.cephb.lindenb.dochandler.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
@@ -25,7 +27,9 @@ import javax.persistence.Query;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDesktopPane;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -62,15 +66,65 @@ import org.lindenb.swing.layout.InputLayout;
 import org.lindenb.swing.table.GenericTableModel;
 import org.lindenb.util.Cast;
 import org.lindenb.util.Debug;
+import org.lindenb.util.Pair;
+import org.lindenb.util.TimeUtils;
 
 
+import fr.cephb.lindenb.bio.ncbo.bioportal.NCBOSearchBean;
+import fr.cephb.lindenb.bio.ncbo.bioportal.NCBOSearchPane;
 import fr.cephb.lindenb.dochandler.entities.Cell;
 import fr.cephb.lindenb.dochandler.entities.ColumnSpec;
 import fr.cephb.lindenb.dochandler.entities.Document;
+import fr.cephb.lindenb.dochandler.entities.DocumentMetaData;
 import fr.cephb.lindenb.dochandler.entities.EntityMgrSingleton;
 import fr.cephb.lindenb.dochandler.entities.OntClass;
 import fr.cephb.lindenb.dochandler.entities.Ontology;
 import fr.cephb.lindenb.dochandler.entities.User;
+
+
+class SuggestConceptButton extends JPanel
+	{
+	private static final long serialVersionUID = 1L;
+	private JTextField  tfConcept;
+	private String concept;
+	public SuggestConceptButton()
+		{
+		super(new BorderLayout());
+		
+		JButton button= new JButton(new AbstractAction("[+]")
+			{
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				openConceptDialog();
+				}
+			});
+		button.setPreferredSize(new Dimension(16,16));
+		add(button,BorderLayout.WEST);
+		add(this.tfConcept= new JTextField(20),BorderLayout.CENTER);
+		this.tfConcept.setEnabled(false);
+		}
+	
+	private void openConceptDialog()
+		{
+		NCBOSearchPane dialog = new NCBOSearchPane();
+		if(JOptionPane.showConfirmDialog(this, dialog,"Choose...",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION) return;
+		NCBOSearchBean bean=dialog.getSelectedBean();
+		if(bean==null)
+			{
+			return;
+			}
+		this.tfConcept.setToolTipText(bean.getPreferredName());
+		this.tfConcept.setText(bean.getPreferredName());
+		this.tfConcept.setCaretPosition(0);
+		this.concept= bean.getConceptId();
+		}
+	
+	public String getConcept()
+		{
+		return this.concept;
+		}
+	}
 
 /**
  * 
@@ -132,11 +186,14 @@ class OntologyPane
 						JPanel pane= new JPanel(new InputLayout());
 						JTextField tfName=new JTextField("",20);
 						JTextField tfDesc=new JTextField("",20);
+						SuggestConceptButton conceptButton= new SuggestConceptButton();
 						
 						pane.add(new JLabel("Name:",JLabel.RIGHT));
 						pane.add(tfName);
 						pane.add(new JLabel("Description:",JLabel.RIGHT));
 						pane.add(tfDesc);
+						pane.add(new JLabel("Concept:",JLabel.RIGHT));
+						pane.add(conceptButton);
 						
 						Pattern namePattern= Pattern.compile("[a-z][a-z0-9_]*",Pattern.CASE_INSENSITIVE);
 						while(true)
@@ -159,6 +216,7 @@ class OntologyPane
 									label,
 									desc
 								);
+							newclass.setConceptURI(conceptButton.getConcept());
 							EntityManager mgr=EntityMgrSingleton.getEntityManager();
 						
 							EntityTransaction tx=mgr.getTransaction();
@@ -215,10 +273,78 @@ class OntologyPane
 			}
 		return set;
 		}
+	}
+
+class MetaPane
+	extends JPanel
+	{
+	private static final long serialVersionUID = 1L;
+	private DefaultTableModel tModel= new DefaultTableModel(new String[]{"Property","Value"},0);
+	private JTextField valueField;
+	private JComboBox cbox;
+	MetaPane()
+		{
+		super(new BorderLayout());
+		JPanel top=new JPanel(new FlowLayout(FlowLayout.LEADING));
+		this.add(top,BorderLayout.NORTH);
+		AbstractAction action=new AbstractAction("OK")
+			{
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String prop= String.valueOf(cbox.getSelectedItem());
+				if(prop==null) prop="";
+				prop=prop.trim();
+				String value= valueField.getText().trim();
+				if(prop.length()>0 && value.length()>0)
+					{
+					tModel.addRow(new String[]{prop,value});
+					cbox.setSelectedIndex(-1);
+					valueField.setText("");
+					}
+				
+				}
+			};
+			
+		EntityManager mgr=EntityMgrSingleton.getEntityManager();
+		Query q=mgr.createNativeQuery("select distinct property from docmeta order by 1");
+		Vector<?> items= new Vector(q.getResultList());
+		mgr.close();
+		
+		this.cbox= new JComboBox(items);
+		this.cbox.setEditable(true);
+		top.add(new JLabel("Add:",JLabel.RIGHT));
+		top.add(cbox);
+		top.add(this.valueField=new JTextField(20));
+		this.valueField.addActionListener(action);
+		top.add(new JButton(action));
+		
+		JTable table= new JTable(tModel);
+		add(new JScrollPane(table));
+		}
 	
+	public void addProperty(String prop,String value)
+		{
+		tModel.addRow(new String[]{prop,value});
+		}
 	
+	List<Pair<String,String>> getProperties()
+		{
+		List<Pair<String,String>> prop= new ArrayList<Pair<String,String>>();
+		for(int i=0;i< tModel.getRowCount();++i)
+			{
+			prop.add(new Pair<String,String>(
+					String.valueOf(tModel.getValueAt(i, 0)),
+					String.valueOf(tModel.getValueAt(i, 1))
+					));
+			}
+		return prop;
+		}
 	
 	}
+
+
 
 /**
  * 
@@ -613,6 +739,18 @@ public class DocumentHandler extends JFrame
 		List<ColumnSpec> list= new ArrayList<ColumnSpec>();
 		document.setColumnSpecs(list);
 		
+		
+		//meta info
+		MetaPane metapane= new MetaPane();
+		metapane.addProperty("dc:date",TimeUtils.toYYYYMMDD());
+		metapane.addProperty("dc:creator",System.getProperty("user.name", ""));
+		metapane.addProperty("dc:title",file.getName());
+		
+		if(JOptionPane.showConfirmDialog(this, metapane,"Meta",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null)!=JOptionPane.OK_OPTION) return;
+		
+		
+		
+		//loop over columns
 		for(int i=0;i< headerLabels.length;++i)
 			{
 			ColumnSpec columnSpec= new ColumnSpec();
@@ -688,6 +826,17 @@ public class DocumentHandler extends JFrame
 		try {
 			tx.begin();
 			mgr.persist(document);
+			
+			for(Pair<String,String> pair:metapane.getProperties())
+				{
+				//document
+				DocumentMetaData meta= new DocumentMetaData();
+				meta.setDocument(document);
+				meta.setProperty(pair.first());
+				meta.setValue(pair.second());
+				mgr.persist(meta);
+				}
+			
 			for(ColumnSpec spec:document.getColumnSpecs())
 				{
 				spec.setDocument(document);

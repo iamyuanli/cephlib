@@ -43,6 +43,9 @@
 	 <copy todir="build/compile" includeEmptyDirs="false">
 		<fileset dir="${lindenb.src}"/>
 	 </copy>
+	<copy todir="build/compile" includeEmptyDirs="false">
+			<fileset dir="../../src/java"/>
+	 </copy>
 
 	 <javac srcdir="build/compile"
 		destdir="build/compile"
